@@ -112,9 +112,6 @@ typedef struct LR_system {
 	double disp_delta;
 	double or_delta;
 
-	double iso_epsilon;
-	double iso_range, iso_sqr_range;
-
 	double kf_delta_aa, kf_cosmax_aa, kf_sqr_rcut_aa;
 	double avb_vin, avb_vout;
 	double avb_p;

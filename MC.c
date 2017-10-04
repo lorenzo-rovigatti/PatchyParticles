@@ -27,18 +27,6 @@ void init_MC(input_file *input, LR_system *syst, LR_IO *IO) {
 	}
 }
 
-inline void set_neigh_state(LR_system *syst, int *neigh_matrix, int p_idx, int q_idx, int state) {
-	neigh_matrix[p_idx*syst->N + q_idx] = neigh_matrix[q_idx*syst->N + p_idx] = state;
-}
-
-inline int get_n_neighs(LR_system *syst, int *neigh_matrix, int p_idx) {
-	int tot = 0;
-	int i = 0;
-	for(i = 0; i < syst->N; i++) if(neigh_matrix[p_idx*syst->N + i] != NO_BOND) tot++;
-
-	return tot;
-}
-
 void rollback_particle(LR_system *syst, PatchyParticle *p) {
 	p->r[0] = p->r_old[0];
 	p->r[1] = p->r_old[1];

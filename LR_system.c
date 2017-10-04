@@ -181,17 +181,6 @@ void init_system(input_file *input, LR_system *syst, LR_IO *IO) {
 
 	syst->kf_sqr_rcut_aa = SQR(1. + syst->kf_delta_aa);
 
-	int is_iso = 0;
-	getInputInt(input, "isotropic", &is_iso, 0);
-	if(is_iso) {
-		syst->iso_epsilon = 1.*syst->n_patches/12.;
-		getInputDouble(input, "isotropic_range", &syst->iso_range, 1);
-		syst->iso_sqr_range = SQR(syst->iso_range);
-		if(syst->iso_sqr_range < syst->kf_sqr_rcut_aa) die(IO, "The range of the isotropic attraction (%lf) should be larger than the patchy one (%lf)", sqrt(syst->iso_sqr_range), sqrt(syst->kf_sqr_rcut_aa));
-		log_msg(IO, "Isotropic interaction parameters: epsilon = %lf, range = %lf\n", syst->iso_epsilon, syst->iso_range);
-	}
-	else syst->iso_epsilon = 0.;
-
 	log_msg(IO, "Patch parameters: n_patches = %d, cosmax = %lf, delta = %lf\n", syst->n_patches, syst->kf_cosmax_aa, syst->kf_delta_aa);
 
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);

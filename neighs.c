@@ -6,6 +6,7 @@
  */
 
 #include <float.h>
+#include <math.h>
 
 #include "neighs.h"
 #include "LR_IO.h"
@@ -44,8 +45,6 @@ int kf_would_interact(LR_system *syst, PatchyParticle *p, vector r, vector *patc
 			}
 		}
 	}
-
-	if(syst->iso_epsilon != 0. && dist2 < syst->iso_sqr_range) return ISO_BOND;
 
 	return NO_BOND;
 }
