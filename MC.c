@@ -496,13 +496,11 @@ void MC_step(LR_system *syst, LR_IO *IO) {
 
 void check_energy(LR_system *syst, LR_IO *IO) {
 	int i;
-	int n_bonds = 0;
 	double E = 0.;
 	syst->overlap = 0;
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
 		E += current_energy(syst, p);
-		n_bonds += p->n_aa;
 		gram_schmidt(p->orient[0], p->orient[1], p->orient[2]);
 	}
 	E *= 0.5;
@@ -513,9 +511,4 @@ void check_energy(LR_system *syst, LR_IO *IO) {
 	}
 
 	syst->energy = E;
-
-	double E_from_bonds = -0.5*(n_bonds);
-	if(fabs(syst->energy) > 1e-5 && fabs((E_from_bonds - syst->energy)/syst->energy) > 1e-5) {
-		die(IO, "\nEnergy from bonds check failed, energy = %lf, energy from bonds = %lf\n", syst->energy, E_from_bonds);
-	}
 }
