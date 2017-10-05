@@ -11,9 +11,6 @@
 #define SQR(x) ((x) * (x))
 #define SCALAR(x, y) ((x)[0]*(y)[0] + (x)[1]*(y)[1] + (x)[2]*(y)[2])
 
-#define RESOLVE_OVERLAP_LIMIT 1000000
-#define JOIN_CLUSTERS_LIMIT 100000
-
 #define MAX_E 2.5
 
 #define N_MOVES 6
@@ -22,6 +19,14 @@
 #define ADD 2
 #define REMOVE 3
 #define AVB_IN_IN 4
+
+#define NVT 0
+#define GC 1
+#define SUS 3
+
+#define RTMC 0
+#define VMMC 1
+#define AVBMC 2
 
 #define TYPE_NO -1
 #define TYPE_MON 0
@@ -61,26 +66,26 @@ typedef struct PatchyParticle {
 	struct PatchyParticle *next;
 } PatchyParticle;
 
-typedef struct {
+typedef struct Cells {
 	int N_side;
 	int N;
 	PatchyParticle **heads;
-} LR_cells;
+	// TODO: implement this
+	PatchyParticle **next;
+} Cells;
 
-typedef struct {
-	char configuration_prefix[512];
-	char configuration_last[256];
-	char sus_prefix[512];
-	int print_csd;
+typedef struct Output {
+	char configuration_folder[512];
+	char configuration_last[512];
+	char sus_folder[512];
 	FILE *log;
 	FILE *energy;
 	FILE *density;
 	FILE *acc;
-} LR_IO;
+} Output;
 
-typedef struct LR_system {
+typedef struct System {
 	int N, N_min, N_max;
-	int substeps;
 	double L;
 	double V;
 	double T;
@@ -94,9 +99,9 @@ typedef struct LR_system {
 	vector *base_patches;
 
 	int dynamics;
-	int use_avb_in_in;
 	int ensemble;
-	void (*do_dynamics)(struct LR_system *, LR_IO *);
+	void (*do_dynamics)(struct System *, Output *);
+	void (*do_ensemble)(struct System *, Output *);
 
 	llint *SUS_hist;
 	llint **SUS_e_hist;
@@ -111,14 +116,14 @@ typedef struct LR_system {
 	double disp_max;
 	double theta_max;
 
-	double kf_delta_aa, kf_cosmax_aa, kf_sqr_rcut_aa;
+	double kf_delta, kf_cosmax, kf_sqr_rcut;
 	double avb_vin, avb_vout;
 	double avb_p;
 
-	LR_cells cells;
+	Cells cells;
 
 	int seed;
 	PatchyParticle *particles;
-} LR_system;
+} System;
 
 #endif /* DEFS_H_ */

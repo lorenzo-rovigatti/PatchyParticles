@@ -19,44 +19,9 @@ void set_vector(vector v, double x, double y, double z) {
 	v[2] = z;
 }
 
-void set_patches(LR_system *syst, PatchyParticle *p) {
+void set_patches(System *syst, PatchyParticle *p) {
 	int i;
 	for(i = 0; i < syst->n_patches; i++) MATRIX_VECTOR_MULTIPLICATION(p->orientation, syst->base_patches[i], p->patches[i]);
-}
-
-int would_overlap(LR_system *syst, PatchyParticle *p, vector disp) {
-	int ind[3], loop_ind[3];
-	vector r = {p->r[0] + disp[0], p->r[1] + disp[1], p->r[2] + disp[2]};
-	ind[0] = (int) ((r[0] / syst->L - floor(r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((r[1] / syst->L - floor(r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((r[2] / syst->L - floor(r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-
-	int j, k, l;
-	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells.N_side) % syst->cells.N_side;
-		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells.N_side) % syst->cells.N_side;
-			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells.N_side) % syst->cells.N_side;
-				int loop_index = (loop_ind[0] * syst->cells.N_side + loop_ind[1]) * syst->cells.N_side + loop_ind[2];
-
-				PatchyParticle *q = syst->cells.heads[loop_index];
-				while(q != NULL) {
-					if(q->index != p->index) {
-						vector dist = {q->r[0] - r[0], q->r[1] - r[1], q->r[2] - r[2]};
-						dist[0] -= syst->L * rint(dist[0] / syst->L);
-						dist[1] -= syst->L * rint(dist[1] / syst->L);
-						dist[2] -= syst->L * rint(dist[2] / syst->L);
-
-						if(SCALAR(dist, dist) < 1.) return 1;
-					}
-					q = q->next;
-				}
-			}
-		}
-	}
-
-	return 0;
 }
 
 void cross(vector v1, vector v2, vector res) {
@@ -86,7 +51,7 @@ void get_perpendicular_versor(vector v, vector res) {
 	normalize(res);
 }
 
-void place_inside_vbonding(LR_system *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch) {
+void place_inside_vbonding(System *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch) {
 	utils_rotate_matrix(syst->base_orient, orient, syst->base_patches[0], 2*drand48()*M_PI);
 
 	vector target_patch_dir;
@@ -96,16 +61,16 @@ void place_inside_vbonding(LR_system *syst, PatchyParticle *rec, vector r, matri
 	get_perpendicular_versor(target_patch_dir, norm_vect);
 
 	// choose a new direction
-	double theta = acos(syst->kf_cosmax_aa + (1. - syst->kf_cosmax_aa) * drand48());
+	double theta = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
 	rotate_vector(target_patch_dir, norm_vect, theta);
 	normalize(target_patch_dir);
 
 	// another random angle
-	double theta2 = acos(syst->kf_cosmax_aa + (1. - syst->kf_cosmax_aa) * drand48());
+	double theta2 = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
 	set_orientation_around_vector(target_patch_dir, orient, theta2);
 
 	// choose the distance
-	double dist = pow(1. + drand48()*(syst->kf_delta_aa*syst->kf_delta_aa*syst->kf_delta_aa + 3.*SQR(syst->kf_delta_aa) + 3.*syst->kf_delta_aa), 1. / 3.);
+	double dist = pow(1. + drand48()*(syst->kf_delta*syst->kf_delta*syst->kf_delta + 3.*SQR(syst->kf_delta) + 3.*syst->kf_delta), 1. / 3.);
 
 	r[0] = target_patch_dir[0]*dist + rec->r[0];
 	r[1] = target_patch_dir[1]*dist + rec->r[1];
@@ -167,7 +132,7 @@ void random_vector_on_sphere(vector res) {
 	res[2] = 1. - 2.*ransq;
 }
 
-void random_orientation(LR_system *syst, matrix orient) {
+void random_orientation(System *syst, matrix orient) {
 	vector v1, v2, v3;
 	random_vector_on_sphere(v1);
 	random_vector_on_sphere(v2);
@@ -302,10 +267,11 @@ void set_orientation_around_vector(vector v, matrix orient, double t) {
 	matrix_matrix_multiplication(cambiamento_base, orient_old, orient);
 }
 
-void reset_counters(LR_system *syst) {
+void utils_reset_acceptance_counters(System *syst) {
 	int i;
 	for(i = 0; i < N_MOVES; i++) {
 		syst->tries[i] = 0;
 		syst->accepted[i] = 0;
 	}
 }
+

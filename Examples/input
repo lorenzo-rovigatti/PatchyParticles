@@ -1,33 +1,25 @@
 Dynamics = 0
-Ensemble = 0
+Ensemble = 1
 Seed = 40912329
 
-Temperature = 0.1
-#Temperature = 1
-Activity = 0.0407
+Temperature = 0.15672
+Activity = 0.03036
 
-DispDelta = 0.1
-OrDelta = 0.1
+Disp_max = 0.1
+Theta_max = 0.1
 
-Restart = 2
-Total_number_steps = 10000000
-Linear_Sampling_frequency = 10000
-Restart_frequency_number = 100000
-Conf_Linear_Sampling_frequency = 1000000
+Steps = 5000000
+Print_every = 1000
+Save_every = 10000
 
-Number_colloids = 20
+GC_N_max = 1000
+
 Density_file = density.dat
 Energy_file = energy.dat
-Configuration_prefix = confs/conf_
+Configuration_folder = confs
 Configuration_last = last.dat
 
 Initial_conditions_file = init.dat
 
-make_initial = 1
-box_size = 25
-initial_N = 100
-
-kf_delta_aa = 0.1
-kf_cosmax_aa = 0.9
-
-n_patches = 4
+KF_delta = 0.119
+KF_cosmax = 0.92

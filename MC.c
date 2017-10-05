@@ -13,21 +13,66 @@
 #include "LR_IO.h"
 #include "neighs.h"
 
-void init_MC(input_file *input, LR_system *syst, LR_IO *IO) {
+void do_NVT(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N; i++) {
+		syst->do_dynamics(syst, output_files);
+	}
+}
+
+void do_GC(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		if(drand48() < 0.01) {
+			MC_add_remove(syst, output_files);
+		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
+void do_SUS(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		if(drand48() < 0.01) {
+			MC_add_remove(syst, output_files);
+			syst->SUS_hist[syst->N - syst->N_min]++;
+		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
+void init_MC(input_file *input, System *syst, Output *IO) {
+	switch(syst->ensemble) {
+	case NVT:
+		syst->do_ensemble = &do_NVT;
+		break;
+	case GC:
+		syst->do_ensemble = &do_GC;
+		break;
+	case SUS:
+		syst->do_ensemble = &do_SUS;
+		break;
+	default:
+		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
+		break;
+	}
+
 	switch(syst->dynamics) {
-	case 0:
+	case RTMC:
 		syst->do_dynamics = &MC_move_rototranslate;
 		break;
-	case 2:
+	case VMMC:
+		break;
+	case AVBMC:
 		syst->do_dynamics = &MC_avb_dyn;
 		break;
 	default:
-		die(IO, "Dynamics %d not supported\n", syst->dynamics);
+		output_exit(IO, "Dynamics %d not supported\n", syst->dynamics);
 		break;
 	}
 }
 
-void rollback_particle(LR_system *syst, PatchyParticle *p) {
+void rollback_particle(System *syst, PatchyParticle *p) {
 	p->r[0] = p->r_old[0];
 	p->r[1] = p->r_old[1];
 	p->r[2] = p->r_old[2];
@@ -59,7 +104,7 @@ void rollback_particle(LR_system *syst, PatchyParticle *p) {
 	}
 }
 
-void change_cell(LR_system *syst, PatchyParticle *p) {
+void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
 	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 	ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
@@ -90,7 +135,7 @@ void change_cell(LR_system *syst, PatchyParticle *p) {
 	p->cell = cell_index;
 }
 
-void rototraslate_particle(LR_system *syst, PatchyParticle *p, vector disp, vector *orient) {
+void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient) {
 	p->r_old[0] = p->r[0];
 	p->r_old[1] = p->r[1];
 	p->r_old[2] = p->r[2];
@@ -114,9 +159,9 @@ void rototraslate_particle(LR_system *syst, PatchyParticle *p, vector disp, vect
 	change_cell(syst, p);
 }
 
-double energy(LR_system *syst, PatchyParticle *p) {
+double energy(System *syst, PatchyParticle *p) {
+	syst->overlap = 0;
 	double E = 0.;
-	if(syst->overlap) return E;
 
 	int ind[3], loop_ind[3];
 	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
@@ -155,39 +200,7 @@ double energy(LR_system *syst, PatchyParticle *p) {
 	return E;
 }
 
-void make_initial_conf(LR_system *syst, LR_IO *IO, char *conf_name) {
-	int inserted = 0;
-	while(inserted < syst->N) {
-		// extract new position
-		vector r = { drand48() * syst->L, drand48() * syst->L, drand48() * syst->L };
-		PatchyParticle *p = syst->particles + inserted;
-		p->r[0] = p->r[1] = p->r[2] = 0.;
-		p->index = inserted;
-
-		if(!would_overlap(syst, p, r)) {
-			random_orientation(syst, p->orientation);
-			p->r[0] = r[0];
-			p->r[1] = r[1];
-			p->r[2] = r[2];
-
-			// add the particle to the new cell
-			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
-			p->next = syst->cells.heads[cell_index];
-			syst->cells.heads[cell_index] = p;
-			p->cell = p->cell_old = cell_index;
-
-			inserted++;
-		}
-	}
-
-	_print_conf(IO, syst, 0, conf_name);
-}
-
-void MC_avb_dyn(LR_system *syst, LR_IO *IO) {
+void MC_avb_dyn(System *syst, Output *IO) {
 	/*
 	 if(drand48() < syst->avb_p || syst->N < 2) MC_rototranslate_dyn(syst, IO);
 	 else {
@@ -292,7 +305,7 @@ void MC_avb_dyn(LR_system *syst, LR_IO *IO) {
 	 */
 }
 
-void MC_move_rototranslate(LR_system *syst, LR_IO *IO) {
+void MC_move_rototranslate(System *syst, Output *IO) {
 	PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
 	int type = ROTO_TRASL;
 	syst->tries[type]++;
@@ -323,7 +336,7 @@ void MC_move_rototranslate(LR_system *syst, LR_IO *IO) {
 	}
 }
 
-void MC_add_remove(LR_system *syst, LR_IO *IO) {
+void MC_add_remove(System *syst, Output *IO) {
 	// try to add a particle
 	if(drand48() < 0.5) {
 		if(syst->N == syst->N_max) return;
@@ -332,21 +345,19 @@ void MC_add_remove(LR_system *syst, LR_IO *IO) {
 		PatchyParticle *p = syst->particles + syst->N;
 		p->index = syst->N;
 
-		double acc_factor = 1;
 		p->r[0] = drand48() * syst->L;
 		p->r[1] = drand48() * syst->L;
 		p->r[2] = drand48() * syst->L;
 
 		random_orientation(syst, p->orientation);
-		acc_factor = syst->V / (syst->N + 1.);
 
 		int i;
-		for(i = 0; i < syst->n_patches; i++) {
+		for(i = 0; i < p->n_patches; i++) {
 			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 		}
 
 		double delta_E = energy(syst, p);
-		double acc = exp(-delta_E / syst->T) * syst->z * acc_factor;
+		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 
 		if(!syst->overlap && drand48() < acc) {
 			syst->energy += delta_E;
@@ -374,8 +385,7 @@ void MC_add_remove(LR_system *syst, LR_IO *IO) {
 
 		double delta_E = -energy(syst, p);
 
-		double acc_factor = syst->N / syst->V;
-		double acc = exp(-delta_E / syst->T) * acc_factor / syst->z;
+		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
 		if(drand48() < acc) {
 			syst->energy += delta_E;
 			syst->N--;
@@ -414,10 +424,12 @@ void MC_add_remove(LR_system *syst, LR_IO *IO) {
 				p->r[2] = q->r[2];
 
 				int i;
-				for(i = 0; i < 3; i++)
+				for(i = 0; i < 3; i++) {
 					memcpy(p->orientation[i], q->orientation[i], sizeof(double) * 3);
-				for(i = 0; i < syst->n_patches; i++)
+				}
+				for(i = 0; i < syst->n_patches; i++) {
 					MATRIX_VECTOR_MULTIPLICATION(p->orientation, syst->base_patches[i], p->patches[i]);
+				}
 
 				// and finally add it back to its former cell
 				p->cell = q->cell;
@@ -430,27 +442,7 @@ void MC_add_remove(LR_system *syst, LR_IO *IO) {
 	}
 }
 
-void MC_sweep(LR_system *syst, LR_IO *IO) {
-	int i;
-	for(i = 0; i < syst->substeps; i++) {
-		syst->overlap = 0;
-		// TODO: use function pointers to incapsulate the ensembles
-		if(syst->ensemble != 0 && drand48() < 0.01) {
-			MC_add_remove(syst, IO);
-			syst->substeps = syst->N * 10;
-			if(syst->substeps < 1000) syst->substeps = 1000;
-			if(syst->ensemble == 3) syst->SUS_hist[syst->N - syst->N_min]++;
-			// TODO: remove the ensemble == 6 (aka the 2D histogram)
-			else if(syst->ensemble == 6) {
-				int epos = (int) (fabs(syst->energy) / syst->SUS_e_step);
-				syst->SUS_e_hist[syst->N - syst->N_min][epos]++;
-			}
-		}
-		else if(syst->N > 0) syst->do_dynamics(syst, IO);
-	}
-}
-
-void check_energy(LR_system *syst, LR_IO *IO) {
+void check_energy(System *syst, Output *IO) {
 	int i;
 	double E = 0.;
 	syst->overlap = 0;
@@ -461,9 +453,9 @@ void check_energy(LR_system *syst, LR_IO *IO) {
 	}
 	E *= 0.5;
 
-	if(syst->overlap) die(IO, "\nComputing energy from scratch resulted in an overlap, aborting");
+	if(syst->overlap) output_exit(IO, "\nComputing energy from scratch resulted in an overlap, aborting");
 	if(fabs(syst->energy) > 1e-5 && fabs((E - syst->energy) / syst->energy) > 1e-5) {
-		die(IO, "\nEnergy check failed, old energy = %lf, new energy = %lf\n", syst->energy, E);
+		output_exit(IO, "\nEnergy check failed, old energy = %lf, new energy = %lf\n", syst->energy, E);
 	}
 
 	syst->energy = E;

@@ -11,22 +11,21 @@
 #include "defs.h"
 #include "parse_input.h"
 
-void init_cells(LR_system *syst, LR_IO *IO);
+void _init_cells(System *syst, Output *IO);
 
-void rototraslate_particle(LR_system *syst, PatchyParticle *p, vector disp, vector *orient);
-void rollback_particle(LR_system *syst, PatchyParticle *p);
+void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);
+void rollback_particle(System *syst, PatchyParticle *p);
 
-void MC_add_remove(LR_system *syst, LR_IO *IO);
-void MC_add_remove_single_cluster(LR_system *syst, LR_IO *IO);
-void MC_avb_dyn(LR_system *syst, LR_IO *IO);
-void MC_move_rototranslate(LR_system *syst, LR_IO *IO);
+void MC_add_remove(System *syst, Output *IO);
+void MC_add_remove_single_cluster(System *syst, Output *IO);
+void MC_avb_dyn(System *syst, Output *IO);
+void MC_move_rototranslate(System *syst, Output *IO);
 
-void init_MC(input_file *input, LR_system *syst, LR_IO *IO);
-void make_initial_conf(LR_system *syst, LR_IO *IO, char *conf_name);
-void MC_sweep(LR_system *syst, LR_IO *IO);
+void init_MC(input_file *input, System *syst, Output *IO);
+void make_initial_conf(System *syst, Output *IO, char *conf_name);
 void fix_new_neighs(PatchyParticle *p);
-double energy(LR_system *syst, PatchyParticle *p);
-void change_cell(LR_system *syst, PatchyParticle *p);
-void check_energy(LR_system *syst, LR_IO *IO);
+double energy(System *syst, PatchyParticle *p);
+void change_cell(System *syst, PatchyParticle *p);
+void check_energy(System *syst, Output *IO);
 
 #endif /* MC_H_ */
