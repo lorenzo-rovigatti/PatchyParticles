@@ -125,8 +125,8 @@ void init_system(input_file *input, LR_system *syst, LR_IO *IO) {
 	getInputInt(input, "Dynamics", &syst->dynamics, 1);
 	getInputInt(input, "Ensemble", &syst->ensemble, 1);
 
-	getInputDouble(input, "DispDelta", &syst->disp_delta, 1);
-	getInputDouble(input, "OrDelta", &syst->or_delta, 1);
+	getInputDouble(input, "DispDelta", &syst->disp_max, 1);
+	getInputDouble(input, "OrDelta", &syst->theta_max, 1);
 	getInputDouble(input, "Temperature", &syst->T, 1);
 
 	char name[256];
@@ -261,10 +261,10 @@ void init_system(input_file *input, LR_system *syst, LR_IO *IO) {
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
-		p->type = TYPE_NO;
-		p->n_aa = 0;
 
-		p->patches = malloc(sizeof(vector) * syst->n_patches);
+		p->n_patches = syst->n_patches;
+		p->patches = malloc(sizeof(vector) * p->n_patches);
+		p->base_patches = syst->base_patches;
 	}
 
 	i = 0;
@@ -284,13 +284,13 @@ void init_system(input_file *input, LR_system *syst, LR_IO *IO) {
 		cross(p1, p2, p3);
 
 		// construct the orientation matrix
-		memcpy(p->orient[0], p1, 3 * sizeof(double));
-		memcpy(p->orient[1], p2, 3 * sizeof(double));
-		memcpy(p->orient[2], p3, 3 * sizeof(double));
-		gram_schmidt(p->orient[0], p->orient[1], p->orient[2]);
+		memcpy(p->orientation[0], p1, 3 * sizeof(double));
+		memcpy(p->orientation[1], p2, 3 * sizeof(double));
+		memcpy(p->orientation[2], p3, 3 * sizeof(double));
+		gram_schmidt(p->orientation[0], p->orientation[1], p->orientation[2]);
 
 		int j;
-		for(j = 0; j < syst->n_patches; j++) MATRIX_VECTOR_MULTIPLICATION(p->orient, syst->base_patches[j], p->patches[j]);
+		for(j = 0; j < syst->n_patches; j++) MATRIX_VECTOR_MULTIPLICATION(p->orientation, syst->base_patches[j], p->patches[j]);
 
 		i++;
 

@@ -57,14 +57,14 @@ int main(int argc, char *argv[]) {
 	double E = (syst.N > 0) ? syst.energy / syst.N : 0;
 	log_msg(&IO, "Initial energy: %lf\n", E);
 
-	llint steps, curr_step;
-	getInputLLInt(&input, "Total_number_steps", &steps, 1);
+	llint steps, curr_step, print_every, save_every;
+	getInputLLInt(&input, "steps", &steps, 1);
+	getInputLLInt(&input, "print_every", &print_every, 1);
+	getInputLLInt(&input, "save_every", &save_every, 1);
 	for(curr_step = 0; curr_step < steps && !stop; curr_step++) {
-		if((curr_step % 1000) == 0) {
+		if((curr_step % print_every) == 0) {
 			print_output(&IO, &syst, curr_step);
-		}
 
-		if((curr_step % 10000) == 0) {
 			if(curr_step != 0) {
 				log_msg(&IO, "Checking coherence...");
 				check_energy(&syst, &IO);
@@ -76,11 +76,11 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		if((curr_step % 100000) == 0) {
-			if(curr_step != 0) print_conf(&IO, &syst, curr_step);
+		if(curr_step > 0 && (curr_step % save_every) == 0) {
+			print_conf(&IO, &syst, curr_step);
 		}
 
-		MC_step(&syst, &IO);
+		MC_sweep(&syst, &IO);
 	}
 
 	_print_conf(&IO, &syst, curr_step, IO.configuration_last);

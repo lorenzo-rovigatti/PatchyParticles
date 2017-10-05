@@ -21,7 +21,7 @@ void set_vector(vector v, double x, double y, double z) {
 
 void set_patches(LR_system *syst, PatchyParticle *p) {
 	int i;
-	for(i = 0; i < syst->n_patches; i++) MATRIX_VECTOR_MULTIPLICATION(p->orient, syst->base_patches[i], p->patches[i]);
+	for(i = 0; i < syst->n_patches; i++) MATRIX_VECTOR_MULTIPLICATION(p->orientation, syst->base_patches[i], p->patches[i]);
 }
 
 int would_overlap(LR_system *syst, PatchyParticle *p, vector disp) {
@@ -87,7 +87,7 @@ void get_perpendicular_versor(vector v, vector res) {
 }
 
 void place_inside_vbonding(LR_system *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch) {
-	rotate_orient(syst->base_orient, orient, syst->base_patches[0], 2*drand48()*M_PI);
+	utils_rotate_matrix(syst->base_orient, orient, syst->base_patches[0], 2*drand48()*M_PI);
 
 	vector target_patch_dir;
 	memcpy(target_patch_dir, rec->patches[target_patch], 3*sizeof(double));
@@ -230,7 +230,7 @@ void get_rotation_matrix(vector axis, double t, matrix rotation_matrix) {
 	rotation_matrix[2][2] = SQR(axis[2]) + (1. - SQR(axis[2]))*ct;
 }
 
-void rotate_orient(matrix orient_old, matrix orient_new, vector axis, double t) {
+void utils_rotate_matrix(matrix orient_old, matrix orient_new, vector axis, double t) {
 	matrix rotation_matrix;
 	get_rotation_matrix(axis, t, rotation_matrix);
 

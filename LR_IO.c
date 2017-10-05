@@ -102,8 +102,8 @@ void _print_conf(LR_IO *IO, LR_system *syst, llint step, char *name) {
 	int i;
 	PatchyParticle *p = syst->particles;
 	for(i = 0; i < syst->N; i++) {
-		fprintf(out, "%lf %lf %lf\n", p->orient[0][0], p->orient[0][1], p->orient[0][2]);
-		fprintf(out, "%lf %lf %lf\n", p->orient[1][0], p->orient[1][1], p->orient[1][2]);
+		fprintf(out, "%lf %lf %lf\n", p->orientation[0][0], p->orientation[0][1], p->orientation[0][2]);
+		fprintf(out, "%lf %lf %lf\n", p->orientation[1][0], p->orientation[1][1], p->orientation[1][2]);
 		fprintf(out, "%.12lf %.12lf %.12lf\n", p->r[0], p->r[1], p->r[2]);
 		p++;
 	}

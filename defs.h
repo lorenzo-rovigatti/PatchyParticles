@@ -51,15 +51,14 @@ typedef long long int llint;
 
 typedef struct PatchyParticle {
 	vector r, r_old;
-	vector *patches;
-	matrix orient, orient_old;
+	matrix orientation, orientation_old;
 	int index;
+
+	int n_patches;
+	vector *patches, *base_patches;
 
 	int cell, cell_old;
 	struct PatchyParticle *next;
-
-	int n_aa;
-	int type;
 } PatchyParticle;
 
 typedef struct {
@@ -109,8 +108,8 @@ typedef struct LR_system {
 	int tries[N_MOVES];
 	int accepted[N_MOVES];
 
-	double disp_delta;
-	double or_delta;
+	double disp_max;
+	double theta_max;
 
 	double kf_delta_aa, kf_cosmax_aa, kf_sqr_rcut_aa;
 	double avb_vin, avb_vout;
