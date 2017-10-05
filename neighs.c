@@ -9,7 +9,7 @@
 #include <math.h>
 
 #include "neighs.h"
-#include "LR_IO.h"
+#include "output.h"
 #include "utils.h"
 
 // -1 == overlap, 0 == no interaction, 1 == isotropic bond, 2 == patch-patch bond

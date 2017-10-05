@@ -6,11 +6,11 @@
  */
 
 #include "defs.h"
-#include "LR_IO.h"
-#include "LR_system.h"
+#include "output.h"
 #include "MC.h"
 #include "parse_input.h"
 #include "neighs.h"
+#include "system.h"
 #include "utils.h"
 
 int stop = 0;

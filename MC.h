@@ -11,8 +11,6 @@
 #include "defs.h"
 #include "parse_input.h"
 
-void _init_cells(System *syst, Output *IO);
-
 void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);
 void rollback_particle(System *syst, PatchyParticle *p);
 

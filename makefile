@@ -30,16 +30,19 @@ CFLAGS = $(OPTIMIZATION_FLAG) $(ARCH) $(DEF)
 LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
 
 # ---------  OBJECTS -----------#
-OBJ = parse_input.o LR_IO.o LR_system.o MC.o utils.o neighs.o
+OBJ = parse_input.o output.o system.o MC.o utils.o neighs.o
 
 # ---------  EXECUTABLE -----------#
 EXE = PatchyParticles
 
 # -------- COMPILATION STEPS ------#
 
-default: PatchyParticles
+default: PatchyParticles generator
 
-all: PatchyParticles
+all: PatchyParticles generator
+
+generator: generator.o $(OJB)
+	$(CC) generator.o $(OBJ) $(LFLAGS) -lm -o generator
 
 PatchyParticles: main.o $(OBJ)
 	$(CC) main.o $(OBJ) $(LFLAGS) -lm -o $(EXE)

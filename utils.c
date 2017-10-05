@@ -10,7 +10,7 @@
 #include <float.h>
 
 #include "utils.h"
-#include "LR_IO.h"
+#include "output.h"
 #include "neighs.h"
 
 void set_vector(vector v, double x, double y, double z) {
@@ -133,34 +133,10 @@ void random_vector_on_sphere(vector res) {
 }
 
 void random_orientation(System *syst, matrix orient) {
-	vector v1, v2, v3;
-	random_vector_on_sphere(v1);
-	random_vector_on_sphere(v2);
-	random_vector_on_sphere(v3);
-	gram_schmidt(v1, v2, v3);
-
-	orient[0][0] = v1[0];
-	orient[1][0] = v1[1];
-	orient[2][0] = v1[2];
-
-	orient[0][1] = v2[0];
-	orient[1][1] = v2[1];
-	orient[2][1] = v2[2];
-
-	orient[0][2] = v3[0];
-	orient[1][2] = v3[1];
-	orient[2][2] = v3[2];
-
-	// rotations have det(R) == 1
-	if(determinant(orient) < 0) {
-		orient[0][0] = v2[0];
-		orient[1][0] = v2[1];
-		orient[2][0] = v2[2];
-
-		orient[0][1] = v1[0];
-		orient[1][1] = v1[1];
-		orient[2][1] = v1[2];
-	}
+	vector axis;
+	random_vector_on_sphere(axis);
+	double t = drand48() * M_PI;
+	get_rotation_matrix(axis, t, orient);
 }
 
 void matrix_matrix_multiplication(matrix m, matrix n, matrix res) {

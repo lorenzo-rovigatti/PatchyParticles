@@ -5,14 +5,15 @@
  *      Author: lorenzo
  */
 
+#include "system.h"
+
 #include <stdlib.h>
 #include <float.h>
 #include <time.h>
 #include <math.h>
 
 #include "MC.h"
-#include "LR_system.h"
-#include "LR_IO.h"
+#include "output.h"
 #include "neighs.h"
 #include "utils.h"
 

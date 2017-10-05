@@ -1,11 +1,11 @@
 /*
- * LR_IO.c
+ * output.c
  *
  *  Created on: 31/ott/2011
  *      Author: lorenzo
  */
 
-#include "LR_IO.h"
+#include "output.h"
 #include "utils.h"
 
 #include <unistd.h>
