@@ -48,13 +48,13 @@ void _init_cells(System *syst, Output *IO) {
 void _init_tetrahedral_patches(System *syst, Output *IO) {
 	syst->n_patches = 4;
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
-
-	int i, j;
 	double half_isqrt3 = 0.5 / sqrt(3);
 	set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3,  half_isqrt3);
 	set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
 	set_vector(syst->base_patches[2], half_isqrt3,  half_isqrt3,  half_isqrt3);
 	set_vector(syst->base_patches[3], -half_isqrt3,  half_isqrt3, -half_isqrt3);
+
+	int i, j;
 	for(i = 0; i < syst->n_patches; i++) normalize(syst->base_patches[i]);
 
 	// now we need to initialize syst->base_orient

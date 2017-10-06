@@ -44,7 +44,7 @@ int would_overlap(System *syst, PatchyParticle *p, vector disp) {
 void make_initial_conf(System *syst, char *conf_name) {
 	int inserted = 0;
 	while(inserted < syst->N) {
-		// extract new position
+		// extract a new position
 		vector r = { drand48() * syst->L, drand48() * syst->L, drand48() * syst->L };
 		PatchyParticle *p = syst->particles + inserted;
 		p->r[0] = p->r[1] = p->r[2] = 0.;
@@ -67,6 +67,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 			p->cell = p->cell_old = cell_index;
 
 			inserted++;
+			if(syst->N > 10 && inserted % (syst->N/10) == 0) fprintf(stderr, "Inserted %d%% of the particles (%d/%d)\n", inserted*100/syst->N, inserted, syst->N);
 		}
 	}
 
@@ -95,6 +96,10 @@ int main(int argc, char *argv[]) {
 	System new_syst;
 	new_syst.N = atoi(argv[1]);
 	double density = atof(argv[2]);
+	if(density > 0.7) {
+		fprintf(stderr, "This simple generator cannot produce configurations with density higher than 0.7\n");
+		exit(1);
+	}
 	new_syst.L = pow(new_syst.N/density, 1./3.);
 
 	Cells *cells = &new_syst.cells;
@@ -115,11 +120,9 @@ int main(int argc, char *argv[]) {
 		PatchyParticle *p = new_syst.particles + i;
 		p->patches = NULL;
 	}
-	fprintf(stderr, "Creating the configuration (N = %d, L = %lf), this could take some time... ", new_syst.N, new_syst.L);
-
 	char name[512] = "generated.rrr";
 	make_initial_conf(&new_syst, name);
-	fprintf(stderr, "done\n");
+	fprintf(stderr, "Generation done\n");
 
 	free(new_syst.particles);
 

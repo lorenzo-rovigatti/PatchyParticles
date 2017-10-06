@@ -135,7 +135,7 @@ void random_vector_on_sphere(vector res) {
 void random_orientation(System *syst, matrix orient) {
 	vector axis;
 	random_vector_on_sphere(axis);
-	double t = drand48() * M_PI;
+	double t = drand48() * 2 * M_PI;
 	get_rotation_matrix(axis, t, orient);
 }
 

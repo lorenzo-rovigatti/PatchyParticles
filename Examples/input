@@ -12,7 +12,7 @@ Steps = 5000000
 Print_every = 1000
 Save_every = 10000
 
-GC_N_max = 1000
+GC_N_max = 1500
 
 Density_file = density.dat
 Energy_file = energy.dat
