@@ -126,4 +126,9 @@ typedef struct System {
 	PatchyParticle *particles;
 } System;
 
+typedef struct _avbmc {
+	PatchyParticle **neighbours;
+	int num_neighbours;
+} avbmc;
+
 #endif /* DEFS_H_ */
