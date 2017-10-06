@@ -1,5 +1,5 @@
 Dynamics = 0
-Ensemble = 1
+Ensemble = 0
 Seed = 40912329
 
 Temperature = 0.2

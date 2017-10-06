@@ -30,7 +30,7 @@ CFLAGS = $(OPTIMIZATION_FLAG) $(ARCH) $(DEF)
 LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
 
 # ---------  OBJECTS -----------#
-OBJ = parse_input.o output.o system.o MC.o utils.o neighs.o
+OBJ = parse_input.o output.o system.o MC.o utils.o neighs.o avb.o
 
 # ---------  EXECUTABLE -----------#
 EXE = PatchyParticles

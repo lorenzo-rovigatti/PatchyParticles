@@ -117,18 +117,11 @@ typedef struct System {
 	double theta_max;
 
 	double kf_delta, kf_cosmax, kf_sqr_rcut;
-	double avb_vin, avb_vout;
-	double avb_p;
 
 	Cells cells;
 
 	int seed;
 	PatchyParticle *particles;
 } System;
-
-typedef struct _avbmc {
-	PatchyParticle **neighbours;
-	int num_neighbours;
-} avbmc;
 
 #endif /* DEFS_H_ */

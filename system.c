@@ -140,16 +140,6 @@ void system_init(input_file *input, System *syst, Output *IO) {
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	if(syst->dynamics != RTMC) {
-		syst->avb_vin = syst->n_patches*syst->n_patches * (M_PI*(syst->kf_delta*syst->kf_delta*syst->kf_delta + 3.*SQR(syst->kf_delta) +
-				3.*syst->kf_delta) * SQR(1. - syst->kf_cosmax)/3.);
-		output_log_msg(IO, "Vavb = %lf\n", syst->avb_vin);
-		syst->avb_vout = syst->V - syst->avb_vin;
-
-		syst->avb_p = 0.5;
-		getInputDouble(input, "avb_p", &syst->avb_p, 0);
-	}
-
 	_init_tetrahedral_patches(syst, IO);
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;

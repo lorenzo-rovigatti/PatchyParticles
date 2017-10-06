@@ -16,12 +16,10 @@ void rollback_particle(System *syst, PatchyParticle *p);
 
 void MC_add_remove(System *syst, Output *IO);
 void MC_add_remove_single_cluster(System *syst, Output *IO);
-void MC_avb_dyn(System *syst, Output *IO);
 void MC_move_rototranslate(System *syst, Output *IO);
 
-void init_MC(input_file *input, System *syst, Output *IO);
-void make_initial_conf(System *syst, Output *IO, char *conf_name);
-void fix_new_neighs(PatchyParticle *p);
+void MC_init(input_file *input, System *syst, Output *IO);
+void MC_free(System *syst);
 double energy(System *syst, PatchyParticle *p);
 void change_cell(System *syst, PatchyParticle *p);
 void check_energy(System *syst, Output *IO);

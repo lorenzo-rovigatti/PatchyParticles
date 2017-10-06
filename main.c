@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	System syst;
 	output_init(&input, &output_files);
 	system_init(&input, &syst, &output_files);
-	init_MC(&input, &syst, &output_files);
+	MC_init(&input, &syst, &output_files);
 
 	int i;
 
