@@ -56,11 +56,28 @@ int main(int argc, char *argv[]) {
 	double E = (syst.N > 0) ? syst.energy / syst.N : 0;
 	output_log_msg(&output_files, "Initial energy: %lf\n", E);
 
-	llint steps, curr_step, print_every, save_every;
+	// TODO: to be moved somewhere else
+	/**
+	 * Load from the input and configuration files the initial step, number of total steps and "save every" options
+	 */
+	llint steps, start_from, curr_step, print_every, save_every;
 	getInputLLInt(&input, "Steps", &steps, 1);
 	getInputLLInt(&input, "Print_every", &print_every, 1);
 	getInputLLInt(&input, "Save_every", &save_every, 1);
-	for(curr_step = 0; curr_step < steps && !stop; curr_step++) {
+	int restart_step_counter = 1;
+	getInputInt(&input, "Restart_step_counter", &restart_step_counter, 0);
+	if(restart_step_counter) {
+		start_from = 0;
+	}
+	else {
+		char name[256];
+		getInputString(&input, "Initial_conditions_file", name, 1);
+		FILE *conf = fopen(name, "r");
+		fscanf(conf, "%lld %*d %*f %*f %*f\n", &start_from);
+		fclose(conf);
+		steps += start_from;
+	}
+	for(curr_step = start_from; curr_step < steps && !stop; curr_step++) {
 		if((curr_step % print_every) == 0) {
 			output_print(&output_files, &syst, curr_step);
 

@@ -17,9 +17,9 @@ GC_N_max = 1500
 Density_file = density.dat
 Energy_file = energy.dat
 Configuration_folder = confs
-Configuration_last = last.dat
+Configuration_last = last.rrr
 
-Initial_conditions_file = init.dat
+Initial_conditions_file = init.rrr
 
 KF_delta = 0.119
 KF_cosmax = 0.92
