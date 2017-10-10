@@ -17,7 +17,7 @@ typedef struct vmmc_d {
 	int n_prelinked_particles;
 	PatchyParticle ** clust;
 	int n_clust;
-	int *is_in_cluster;
+	int * is_in_cluster;
 	
 	int which_move;
 } vmmc_d;

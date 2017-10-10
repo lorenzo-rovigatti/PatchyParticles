@@ -74,15 +74,24 @@ double _pair_energy(System * syst, PatchyParticle *p, PatchyParticle *q) {
 }
 
 int _mycomp (const void *p, const void * q, void * s) {
-	PatchyParticle * a = (PatchyParticle *) p; 
-	PatchyParticle * b = (PatchyParticle *) p + 1; 
-	PatchyParticle * c = (PatchyParticle *) q; 
-	PatchyParticle * d = (PatchyParticle *) q + 1; 
+	PatchyParticle * a = *(PatchyParticle **)p; 
+	PatchyParticle * b = *((PatchyParticle **)p + 1);
+	PatchyParticle * c = *(PatchyParticle **)q; 
+	PatchyParticle * d = *((PatchyParticle **)q + 1); 
+	/*
+	printf ("a ptr: %p\n", (void*)a);
+	printf ("b ptr: %p\n", (void*)b);
+	printf ("c ptr: %p\n", (void*)c);
+	printf ("d ptr: %p\n", (void*)d);
+	printf ("a->index %d\n", a->index); 
+	printf ("b->index %d\n", b->index); 
+	printf ("c->index %d\n", c->index); 
+	printf ("d->index %d\n", d->index);
+	*/
 	int idx1 = a->index * ((System *)s)->N + b->index;
 	int idx2 = c->index * ((System *)s)->N + d->index;
-	printf ("N, idx1, idx2: %d, %d, %d\n", ((System *)s)->N, idx1, idx2);
-	if (idx1 == idx2) return -1;
-	else return idx1 - idx2;
+	//printf ("N, idx1, idx2: %d, %d, %d\n", ((System *)s)->N, idx1, idx2);
+	return idx1 - idx2;
 }
 
 void _populate_possible_links(System * syst, PatchyParticle *p) {
@@ -91,6 +100,8 @@ void _populate_possible_links(System * syst, PatchyParticle *p) {
 	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 	ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 	ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	
+	assert (vmmcdata->is_in_cluster[p->index] == 1);
 	
 	int j, k, l;
 	int loop_ind[3];
@@ -104,18 +115,28 @@ void _populate_possible_links(System * syst, PatchyParticle *p) {
 
 				PatchyParticle *q = syst->cells.heads[loop_index];
 				while(q != NULL) {
+					// FIXME: following if condition may be more efficient than the one currently
+					// used, but check if it creates more pain than it actually cures
+					//if(vmmcdata->is_in_cluster[q->index] == 0 && q->index != p->index) {
 					if(q->index != p->index) {
 						vector dist = {q->r[0] - p->r[0], q->r[1] - p->r[1], q->r[2] - p->r[2]};
 						dist[0] -= syst->L * rint(dist[0] / syst->L);
 						dist[1] -= syst->L * rint(dist[1] / syst->L);
 						dist[2] -= syst->L * rint(dist[2] / syst->L);
-
 						double dist2 = SCALAR(dist, dist);
+						
 						if (dist2 < syst->kf_sqr_rcut) {
-							// add to list
+							// add to list if entry does not exist
 							vmmcdata->possible_links[2 * vmmcdata->n_possible_links + 0] = (p->index < q->index ? p : q);
 							vmmcdata->possible_links[2 * vmmcdata->n_possible_links + 1] = (p->index < q->index ? q : p);
 							vmmcdata->n_possible_links ++;
+							int m;
+							for (m = 0; m < vmmcdata->n_possible_links - 1; m ++) {
+								if (_mycomp(&(vmmcdata->possible_links[2 * m]), &(vmmcdata->possible_links[2 * (vmmcdata->n_possible_links - 1)]), syst) == 0) {
+									vmmcdata->n_possible_links --;
+									break;
+								}
+							}
 						}
 					}
 					q = q->next;
@@ -125,43 +146,27 @@ void _populate_possible_links(System * syst, PatchyParticle *p) {
 	}
 	
 	int i;
-	printf ("@@BEGIN ## \n" );
+	//printf ("@@BEGIN ## \n" );
 	for (i= 0; i < vmmcdata->n_possible_links; i ++) {
 		PatchyParticle * u = vmmcdata->possible_links[2 * i + 0];
 		PatchyParticle * v = vmmcdata->possible_links[2 * i + 1];
-		printf ("@@## %d %d\n", u->index, v->index);
+		//printf ("@@## %d %d\n", u->index, v->index);
+		//printf ("u ptr: %p\n", (void *)u);
+		//printf ("v ptr: %p\n", (void *)v);
 	}
-	printf ("@@ NOW SORT## \n" );
+	//printf ("@@ NOW SORT## \n" );
 	
 	qsort_r (vmmcdata->possible_links, vmmcdata->n_possible_links, 2 * sizeof(PatchyParticle *), _mycomp, (void *)syst);
+	
+	//printf ("@@ SORTED1 ## \n");
 
 	for (i= 0; i < vmmcdata->n_possible_links; i ++) {
 		PatchyParticle * u = vmmcdata->possible_links[2 * i + 0];
 		PatchyParticle * v = vmmcdata->possible_links[2 * i + 1];
-		printf ("@@ ## %d %d\n", u->index, v->index);
+		//printf ("@@ ## %d %d\n", u->index, v->index);
 	}
-	printf ("@@ SORTED ## \n" );
+	//printf ("@@ SORTED2 ## \n" );
 	
-	// remove those horrible duplicates
-	int check = 1;
-	while (check != 0) {
-		check = 0;
-		int idx1, idx2;
-		for (i = 0; i < vmmcdata->n_possible_links && check == 0; i ++) {
-			PatchyParticle * u = vmmcdata->possible_links[2 * i + 0];
-			PatchyParticle * v = vmmcdata->possible_links[2 * i + 1];
-			idx1 = u->index * syst->N + v->index;
-			int j;
-			for (j = 0; j < i && check == 0; j ++) {
-				PatchyParticle * x = vmmcdata->possible_links[2 * j + 0];
-				PatchyParticle * y = vmmcdata->possible_links[2 * j + 1];
-				idx2 = x->index * syst->N + y->index;
-				if (idx1 == idx2) {
-					vmmcdata->possible_links[2*i
-					// FIXME!!!!
-			}
-		}
-	}
 	return;
 }
 
@@ -188,6 +193,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 	// extract particle at random
 	PatchyParticle *seedp = syst->particles + (int) (drand48() * syst->N);
 	vmmcdata->is_in_cluster[seedp->index] = 1;
+	vmmcdata->clust[0] = seedp;
 	
 	vector move;
 	double angle = -1.;
@@ -222,7 +228,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		PatchyParticle * p = vmmcdata->possible_links[2 * link_index + 0];
 		PatchyParticle * q = vmmcdata->possible_links[2 * link_index + 1];
 		
-		printf("## p->index, q->index, %d, %d\n", p->index, q->index);
+		//printf("## p->index, q->index, %d, %d\n", p->index, q->index);
 		
 		// assert that at least one is in cluster already
 		assert (vmmcdata->is_in_cluster[p->index] == 1 || vmmcdata->is_in_cluster[q->index] == 1);
@@ -306,6 +312,9 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		if (vmmcdata->is_in_cluster[p->index] == 0)
 			force_reject = 1;
 	}
+	
+	// TODO: compute E_old coming from cluster
+	
 	// we move the particles and force a reject if sombody moved too much
 	// TODO: put this in the main cycle
 	for (i = 0; i < vmmcdata->n_clust && force_reject == 0; i ++) {
@@ -320,6 +329,8 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		}
 	}
 	
+	// TODO: compute E_new coming from cluster
+
 	if (force_reject == 1) {
 		for (i = 0; i < vmmcdata->n_clust && force_reject == 0; i ++) {
 			PatchyParticle *p = vmmcdata->clust[i];
@@ -343,7 +354,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 	for (i = 0; i < syst->N; i ++) {
 		check += vmmcdata->is_in_cluster[i];
 	}
-	assert (check = 0);
+	assert (check == 0);
 	
 	return;
 }

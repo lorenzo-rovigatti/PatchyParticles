@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "avb.h"
+#include "vmmc.h"
 #include "MC.h"
 #include "utils.h"
 #include "output.h"
@@ -100,6 +101,8 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		syst->do_dynamics = &MC_move_rototranslate;
 		break;
 	case VMMC:
+		vmmc_init(input, syst, IO);
+		syst->do_dynamics = &vmmc_dynamics;
 		break;
 	case AVBMC:
 		AVBMC_init(input, syst, IO);

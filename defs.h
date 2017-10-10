@@ -19,6 +19,7 @@
 #define ADD 2
 #define REMOVE 3
 #define AVB_IN_IN 4
+#define MOVE_VMMC 5
 
 #define NVT 0
 #define GC 1
