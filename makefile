@@ -42,10 +42,10 @@ default: PatchyParticles generator
 all: PatchyParticles generator
 
 generator: generator.o $(OJB)
-	$(CC) generator.o $(OBJ) $(LFLAGS) -lm -o generator
+	$(CC) generator.o $(OBJ) $(LIBRARY_DIRS) -lm -o generator
 
 PatchyParticles: main.o $(OBJ)
-	$(CC) main.o $(OBJ) $(LFLAGS) -lm -o $(EXE)
+	$(CC) main.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE)
 
 # -------- SUFFIX RULES ------#
 %.o: %.c defs.h

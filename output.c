@@ -78,9 +78,12 @@ void output_print(Output *IO, System *syst, llint step) {
 	fprintf(IO->acc, "%lld %e", step, syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
 	// TODO: update when more moves will become available
 	if(syst->dynamics != 0) {
-		fprintf(IO->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
+		if (syst->dynamics == 1) // VMMC
+			fprintf(IO->acc, " %e", syst->accepted[MOVE_VMMC] / (double) syst->tries[MOVE_VMMC]);
+		else
+			fprintf(IO->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
 	}
-	if(syst->ensemble != 0) {
+	if(syst->ensemble != 0 && syst->dynamics != 1) {
 		fprintf(IO->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
 		fprintf(IO->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
 	}
