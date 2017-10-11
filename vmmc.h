@@ -18,8 +18,8 @@ typedef struct vmmc_d {
 	PatchyParticle ** clust;
 	int n_clust;
 	int * is_in_cluster;
-	
 	int which_move;
+	matrix rotation;
 } vmmc_d;
 
 void vmmc_init(input_file *input, System *syst, Output *IO);

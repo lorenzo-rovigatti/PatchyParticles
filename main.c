@@ -105,6 +105,7 @@ int main(int argc, char *argv[]) {
 	if(syst.ensemble != 0) printf(" %lf", syst.N / syst.V);
 	printf("\n");
 
+	MC_free(&syst);
 	system_free(&syst);
 	output_free(&output_files);
 

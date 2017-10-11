@@ -119,6 +119,7 @@ void MC_free(System *syst) {
 	case RTMC:
 		break;
 	case VMMC:
+		vmmc_free();
 		break;
 	case AVBMC:
 		AVBMC_free(syst);
