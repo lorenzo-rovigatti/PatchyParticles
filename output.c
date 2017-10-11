@@ -73,21 +73,34 @@ void output_print(Output *IO, System *syst, llint step) {
 		fprintf(IO->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
 		fflush(IO->density);
 	}
-
-	// acceptances
-	fprintf(IO->acc, "%lld %e", step, syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
-	// TODO: update when more moves will become available
-	if(syst->dynamics != 0) {
-		if (syst->dynamics == 1) // VMMC
-			fprintf(IO->acc, " %e", syst->accepted[MOVE_VMMC] / (double) syst->tries[MOVE_VMMC]);
-		else
-			fprintf(IO->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
+	
+	// print acceptances for dynamics
+	fprintf(IO->acc, "%lld", step);
+	switch (syst->dynamics) {
+	case RTMC:
+		fprintf(IO->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
+		break;
+	case VMMC:
+		fprintf(IO->acc, " %e", syst->accepted[MOVE_VMMC] / (double) syst->tries[MOVE_VMMC]);
+		break;
+	case AVBMC:
+		fprintf(IO->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
+		fprintf(IO->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
+		break;
+	default:
+		break;
 	}
-	if(syst->ensemble != 0 && syst->dynamics != 1) {
+	
+	// print acceptances for ensemble moves (on the same line as above)
+	switch (syst->ensemble) {
+	case GC:
 		fprintf(IO->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
 		fprintf(IO->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
+		break;
+	default:
+		break;
 	}
-
+	
 	fprintf(IO->acc, "\n");
 	fflush(IO->acc);
 	utils_reset_acceptance_counters(syst);

@@ -30,10 +30,12 @@ void vmmc_init(input_file *input, System *syst, Output *IO) {
 }
 
 void vmmc_free() {
+	printf("freeing vmmc stuff;\n\n\n\n\n\n\n");
 	free(vmmcdata->prelinked_particles);
 	free(vmmcdata->clust);
 	free(vmmcdata->is_in_cluster);
 	free(vmmcdata->possible_links);
+	free(vmmcdata);
 }
 
 void _store_dof(PatchyParticle * p) {
@@ -47,12 +49,15 @@ void _store_dof(PatchyParticle * p) {
 }
 
 void _restore_dof(PatchyParticle * p) {
-	int i, j;
+	int i, j, k;
 	for(i = 0; i < 3; i++) {
 		p->r[i] = p->r_old[i];
 		for(j = 0; j < 3; j++) {
 			p->orientation[i][j] = p->orientation_old[i][j];
 		}
+	}
+	for(k = 0; k < p->n_patches; k++) {
+		MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[k], p->patches[k]);
 	}
 }
 
@@ -173,15 +178,32 @@ void _populate_possible_links(System * syst, PatchyParticle *p) {
 	return;
 }
 
-void _move_particle(PatchyParticle * p, vector move, double t) {
+void _move_particle(System * syst, PatchyParticle * p, vector move, double t) {
 	if (vmmcdata->which_move == VMMC_TRANSLATION) {
 		p->r[0] += move[0];
 		p->r[1] += move[1];
 		p->r[2] += move[2];
 	}
 	else {
+		assert (vmmcdata->which_move == VMMC_ROTATION);
 		// WARNING: assumes _store_dof has been called ahead of this
-		utils_rotate_matrix(p->orientation_old, p->orientation, move, t);
+		// and this p->orientation_old == p_orientation
+		vector dr, dr_tmp;
+		PatchyParticle * seed = vmmcdata->clust[0];
+		dr_tmp[0] = p->r[0] - seed->r[0];
+		dr_tmp[1] = p->r[1] - seed->r[1];
+		dr_tmp[2] = p->r[2] - seed->r[2];
+		dr_tmp[0] -= syst->L * rint(dr_tmp[0] / syst->L);
+		dr_tmp[1] -= syst->L * rint(dr_tmp[1] / syst->L);
+		dr_tmp[2] -= syst->L * rint(dr_tmp[2] / syst->L);
+		MATRIX_VECTOR_MULTIPLICATION(vmmcdata->rotation, dr_tmp, dr);
+		p->r[0] = seed->r[0] + dr[0];
+		p->r[1] = seed->r[1] + dr[1];
+		p->r[2] = seed->r[2] + dr[2];
+		matrix_matrix_multiplication(vmmcdata->rotation, p->orientation_old, p->orientation); // to be consistent with vector rotation, this is the correct order
+		for(int i = 0; i < p->n_patches; i++) {
+			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+		}
 	}
 }
 
@@ -211,12 +233,13 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		vmmcdata->which_move = VMMC_ROTATION;
 		random_vector_on_sphere(move);
 		angle = drand48() * syst->theta_max;
+		get_rotation_matrix(move, angle, vmmcdata->rotation);
 	}
 	
 	// get a list of possible links before and after the move
 	_populate_possible_links(syst, seedp);
 	_store_dof(seedp);
-	_move_particle(seedp, move, angle);
+	_move_particle(syst, seedp, move, angle);
 	_populate_possible_links(syst, seedp);
 	_restore_dof(seedp);
 
@@ -242,7 +265,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		
 		// now we know that one particle is in the cluster and the other is not.
 		// we make it so that p is in the cluster and q is not
-		if (vmmcdata->is_in_cluster[p->index] != 1) {
+		if (vmmcdata->is_in_cluster[p->index] == 0) {
 			PatchyParticle *tmp;
 			tmp = q;
 			q = p;
@@ -252,10 +275,11 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		double E_old, E_p_moved, E_q_moved;
 		
 		E_old = _pair_energy(syst, p, q);
+		
 		assert (syst->overlap == 0);
 		
 		_store_dof(p);
-		_move_particle(p, move, angle);
+		_move_particle(syst, p, move, angle);
 		E_p_moved = _pair_energy(syst, p, q);
 		_restore_dof(p);
 		
@@ -267,7 +291,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 		// decide if p wants to recruit q
 		if (force_prelink == 1 || p1 > drand48()) {
 			_store_dof(q);
-			_move_particle(q, move, angle);
+			_move_particle(syst, q, move, angle);
 			E_q_moved = _pair_energy(syst, p, q);
 			_restore_dof(q);
 			int force_link = syst->overlap;
@@ -286,7 +310,7 @@ void vmmc_dynamics(System *syst, Output *IO) {
 				_populate_possible_links(syst, q);
 				
 				_store_dof(q);
-				_move_particle(q, move, angle);
+				_move_particle(syst, q, move, angle);
 				_populate_possible_links(syst, q);
 				_restore_dof(q);
 			}
@@ -310,24 +334,26 @@ void vmmc_dynamics(System *syst, Output *IO) {
 	
 	// we reject if there are prelinked particles that have not been recruited
 	int i;
-	for (i = vmmcdata->n_prelinked_particles - 1; i >=0 && force_reject == 0; i --) {
+	for (i = 0; i < vmmcdata->n_prelinked_particles; i++) {
 		PatchyParticle * p = vmmcdata->prelinked_particles[i];
 		if (vmmcdata->is_in_cluster[p->index] == 0)
 			force_reject = 1;
 	}
-
+	
 	double deltaE = 0.;
 	if (force_reject == 0)
 		deltaE = -_compute_cluster_energy(syst);
+	assert (syst->overlap == 0);
 	
 	// we move the particles and force a reject if some particle has moved too much
 	// TODO: perhaps put this in the main cycle? it could be done, but putting an early rejection
 	// in something as complicated as the main cycle may make things less readable.
-	for (i = 0; i < vmmcdata->n_clust && force_reject == 0; i ++) {
+	for (i = 0; i < vmmcdata->n_clust; i ++) {
 		PatchyParticle *p = vmmcdata->clust[i];
 		vector old_pos = {p->r[0], p->r[1], p->r[2]};
 		_store_dof(p);
-		_move_particle(p, move, angle);
+		_move_particle(syst, p, move, angle);
+		change_cell(syst, p);
 		vector dist = {old_pos[0] - p->r[0], old_pos[1] - p->r[1], old_pos[2] - p->r[2]};
 		double dist2 = SCALAR(dist, dist);
 		if (dist2 > vmmcdata->max_move * vmmcdata->max_move) {
@@ -337,10 +363,11 @@ void vmmc_dynamics(System *syst, Output *IO) {
 	
 	if (force_reject == 0)
 		deltaE += _compute_cluster_energy(syst);
+	assert (syst->overlap == 0);
 
 	// if we need to reject the move, we put everything back
 	if (force_reject == 1) {
-		for (i = 0; i < vmmcdata->n_clust && force_reject == 0; i ++) {
+		for (i = 0; i < vmmcdata->n_clust; i ++) {
 			PatchyParticle *p = vmmcdata->clust[i];
 			_restore_dof(p);
 		}
@@ -357,6 +384,11 @@ void vmmc_dynamics(System *syst, Output *IO) {
 	for (i = 0; i < vmmcdata->n_clust; i ++) {
 		PatchyParticle *p = vmmcdata->clust[i];
 		change_cell(syst, p);
+		//vmmcdata->is_in_cluster[p->index] = 0;
+	}
+	
+	for (i = 0; i < vmmcdata->n_clust; i ++) {
+		PatchyParticle *p = vmmcdata->clust[i];
 		vmmcdata->is_in_cluster[p->index] = 0;
 	}
 	
