@@ -11,7 +11,10 @@
 #include <unistd.h>
 
 void output_init(input_file *input, Output *output_files) {
-	const char mode[2] = "w";
+	int restart_step_counter = 1;
+	getInputInt(input, "Restart_step_counter", &restart_step_counter, 0);
+	const char *mode = (restart_step_counter) ? "w" : "a";
+
 	char name[512];
 	if(getInputString(input, "Log_file", name, 0) == KEY_FOUND) {
 		if(strcmp("none", name) != 0) {
