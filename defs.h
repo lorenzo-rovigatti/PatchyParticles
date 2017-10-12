@@ -76,6 +76,10 @@ typedef struct Cells {
 } Cells;
 
 typedef struct Output {
+	llint start_from;
+	llint save_every;
+	llint print_every;
+	int restart_step_counter;
 	char configuration_folder[512];
 	char configuration_last[512];
 	char sus_folder[512];

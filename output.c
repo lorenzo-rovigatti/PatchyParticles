@@ -11,9 +11,8 @@
 #include <unistd.h>
 
 void output_init(input_file *input, Output *output_files) {
-	int restart_step_counter = 1;
-	getInputInt(input, "Restart_step_counter", &restart_step_counter, 0);
-	const char *mode = (restart_step_counter) ? "w" : "a";
+	getInputInt(input, "Restart_step_counter", &output_files->restart_step_counter, 0);
+	const char *mode = (output_files->restart_step_counter) ? "w" : "a";
 
 	char name[512];
 	if(getInputString(input, "Log_file", name, 0) == KEY_FOUND) {
@@ -23,6 +22,23 @@ void output_init(input_file *input, Output *output_files) {
 			output_files->log = mylog;
 		}
 	}
+
+	/**
+	 * Load the initial step from the configuration file, if the user requested to not restart the step counter
+	 */
+	if(output_files->restart_step_counter) {
+		output_files->start_from = 0;
+	}
+	else {
+		getInputString(input, "Initial_conditions_file", name, 1);
+		FILE *conf = fopen(name, "r");
+		int res = fscanf(conf, "%lld %*d %*f %*f %*f\n", &output_files->start_from);
+		if(res != 1) output_exit(output_files, "Invalid initial configuration: the first value in the first row should be the time step of the configuration");
+		fclose(conf);
+	}
+
+	getInputLLInt(input, "Print_every", &output_files->print_every, 1);
+	getInputLLInt(input, "Save_every", &output_files->save_every, 1);
 
 	sprintf(name, "energy.dat");
 	getInputString(input, "Energy_file", name, 0);
