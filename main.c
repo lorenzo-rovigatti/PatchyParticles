@@ -9,7 +9,6 @@
 #include "output.h"
 #include "MC.h"
 #include "parse_input.h"
-#include "neighs.h"
 #include "system.h"
 #include "utils.h"
 

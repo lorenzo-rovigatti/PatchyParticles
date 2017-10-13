@@ -1,7 +1,6 @@
 #include "avb.h"
 #include "MC.h"
 #include "utils.h"
-#include "neighs.h"
 
 #include <math.h>
 #include <float.h>
@@ -53,7 +52,7 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 				PatchyParticle *q = syst->cells.heads[loop_index];
 				while(q != NULL) {
 					if(q->index != p->index) {
-						int val = kf_interact(syst, p, q, &p_patch, &q_patch);
+						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
 						if(val == PATCH_BOND) {
 							avbdata->neighbours[p_patch] = q;
@@ -110,7 +109,7 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
-			assert(kf_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
+			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
 			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * avbdata->avb_vin / ((avbdata->num_neighbours + 1.) * avbdata->avb_vout);
@@ -142,7 +141,7 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
-			assert(kf_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
+			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
 			vector new_r;
@@ -156,7 +155,7 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 				random_orientation(syst, new_orient);
 				for(i = 0; i < syst->n_patches; i++)
 					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_patches[i]);
-			} while(kf_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
+			} while(MC_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
 
 			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
 

@@ -14,6 +14,9 @@
 void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);
 void rollback_particle(System *syst, PatchyParticle *p);
 
+int MC_would_interact(System *syst, PatchyParticle *p, vector r, matrix orient, int *onp, int *onq);
+int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq);
+
 void MC_add_remove(System *syst, Output *IO);
 void MC_add_remove_single_cluster(System *syst, Output *IO);
 void MC_move_rototranslate(System *syst, Output *IO);

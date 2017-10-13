@@ -1,7 +1,6 @@
 #include "vmmc.h"
 #include "MC.h"
 #include "utils.h"
-#include "neighs.h"
 
 #include <math.h>
 #include <float.h>
@@ -63,7 +62,7 @@ void _restore_dof(PatchyParticle * p) {
 
 double _pair_energy(System * syst, PatchyParticle *p, PatchyParticle *q) {
 	int p_patch, q_patch;
-	int val = kf_interact(syst, p, q, &p_patch, &q_patch);
+	int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 	if(val == PATCH_BOND) {
 		return -1.;
 	}

@@ -5,13 +5,10 @@
  *      Author: lorenzo
  */
 
-#include <math.h>
-#include <string.h>
-#include <float.h>
-
 #include "utils.h"
 #include "output.h"
-#include "neighs.h"
+
+#include <math.h>
 
 void set_vector(vector v, double x, double y, double z) {
 	v[0] = x;
