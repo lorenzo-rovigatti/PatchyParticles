@@ -213,7 +213,6 @@ void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector 
 	change_cell(syst, p);
 }
 
-// -1 == overlap, 0 == no interaction, 1 == isotropic bond, 2 == patch-patch bond
 int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches, int *onp, int *onq) {
 	vector dist = {r[0] - p->r[0], r[1] - p->r[1], r[2] - p->r[2]};
 	dist[0] -= syst->L * rint(dist[0] / syst->L);
@@ -222,7 +221,7 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 
 	double dist2 = SCALAR(dist, dist);
 
-	if(dist2 < 1.) return -1;
+	if(dist2 < 1.) return OVERLAP;
 	else if(dist2 < syst->kf_sqr_rcut) {
 		// versor
 		double norm = sqrt(dist2);
@@ -250,7 +249,6 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 	return NO_BOND;
 }
 
-// -1 == overlap, 0 == no interaction, 1 == interaction
 int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq) {
 	return MC_would_interact(syst, p, q->r, q->patches, onp, onq);
 }
@@ -282,7 +280,7 @@ double energy(System *syst, PatchyParticle *p) {
 						if(val == PATCH_BOND) {
 							E -= 1.;
 						}
-						else if(val == -1) {
+						else if(val == OVERLAP) {
 							syst->overlap = 1;
 							return 0.;
 						}

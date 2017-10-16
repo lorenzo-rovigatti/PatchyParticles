@@ -66,7 +66,7 @@ double _pair_energy(System * syst, PatchyParticle *p, PatchyParticle *q) {
 	if(val == PATCH_BOND) {
 		return -1.;
 	}
-	else if(val == -1) {
+	else if(val == OVERLAP) {
 		syst->overlap = 1;
 		return 0.;
 	}
@@ -200,7 +200,8 @@ void _move_particle(System * syst, PatchyParticle * p, vector move, double t) {
 		p->r[1] = seed->r[1] + dr[1];
 		p->r[2] = seed->r[2] + dr[2];
 		matrix_matrix_multiplication(vmmcdata->rotation, p->orientation_old, p->orientation); // to be consistent with vector rotation, this is the correct order
-		for(int i = 0; i < p->n_patches; i++) {
+		int i;
+		for(i = 0; i < p->n_patches; i++) {
 			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 		}
 	}

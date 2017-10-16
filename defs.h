@@ -11,8 +11,6 @@
 #define SQR(x) ((x) * (x))
 #define SCALAR(x, y) ((x)[0]*(y)[0] + (x)[1]*(y)[1] + (x)[2]*(y)[2])
 
-#define MAX_E 2.5
-
 #define N_MOVES 6
 #define ROTO_TRASL 0
 #define AVB 1
@@ -29,15 +27,9 @@
 #define VMMC 1
 #define AVBMC 2
 
-#define TYPE_NO -1
-#define TYPE_MON 0
-#define TYPE_END 1
-
+#define OVERLAP -1
 #define NO_BOND 0
-#define ISO_BOND 1
-#define PATCH_BOND 2
-
-#define NO_NEIGH NULL
+#define PATCH_BOND 1
 
 // Bad-looking but excellent performance-wise
 #define MATRIX_VECTOR_MULTIPLICATION(m, v, result) {\

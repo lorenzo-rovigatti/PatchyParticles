@@ -14,7 +14,6 @@
 
 #include "MC.h"
 #include "output.h"
-#include "neighs.h"
 #include "utils.h"
 
 void _init_cells(System *syst, Output *IO) {
