@@ -93,19 +93,19 @@ double _compute_cluster_energy(System *syst) {
 		PatchyParticle * p = vmmcdata->clust[i];
 		assert (vmmcdata->is_in_cluster[p->index] == 1);
 		int ind[3];
-		ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-		ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-		ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+		ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+		ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+		ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 		int j, k, l;
 		int loop_ind[3];
 		for(j = -1; j < 2; j++) {
-			loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
+			loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
 			for(k = -1; k < 2; k++) {
-				loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
+				loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
 				for(l = -1; l < 2; l++) {
-					loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
+					loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
 					
-					int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
+					int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
 					PatchyParticle *q = syst->cells->heads[loop_index];
 					while (q != NULL) {
 						if (vmmcdata->is_in_cluster[q->index] == 0) {
@@ -123,21 +123,21 @@ double _compute_cluster_energy(System *syst) {
 void _populate_possible_links(System * syst, PatchyParticle *p) {
 	// get a list of possible links that can be formed by p
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 	
 	assert (vmmcdata->is_in_cluster[p->index] == 1);
 	
 	int j, k, l;
 	int loop_ind[3];
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
-				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
 
 				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {

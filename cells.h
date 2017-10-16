@@ -13,7 +13,7 @@ typedef struct Output Output;
 typedef struct System System;
 
 typedef struct Cells {
-	int N_side;
+	int N_side[3];
 	int N;
 	PatchyParticle **heads;
 	// TODO: implement this

@@ -160,11 +160,11 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 
-	int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
+	int cell_index = (ind[0] * syst->cells->N_side[1] + ind[1]) * syst->cells->N_side[2] + ind[2];
 	if(cell_index == p->cell) {
 		p->cell_old = p->cell;
 		return;
@@ -249,7 +249,7 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 	return NO_BOND;
 }
 
-int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq) {
+inline int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq) {
 	return MC_would_interact(syst, p, q->r, q->patches, onp, onq);
 }
 
@@ -258,19 +258,19 @@ double energy(System *syst, PatchyParticle *p) {
 	double E = 0.;
 
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 
 	int j, k, l, p_patch, q_patch;
 
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
-				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
 
 				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
@@ -356,10 +356,10 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
+			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
+			int cell_index = (ind[0] * syst->cells->N_side[1] + ind[1]) * syst->cells->N_side[2] + ind[2];
 			p->next = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;

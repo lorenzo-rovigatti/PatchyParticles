@@ -32,9 +32,9 @@ void AVBMC_free() {
 
 void _set_neighbours(System *syst, PatchyParticle *p) {
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 
 	avbdata->num_neighbours = 0;
 	memset(avbdata->neighbours, 0, p->n_patches * sizeof(PatchyParticle*));
@@ -42,12 +42,12 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 	int j, k, l, p_patch, q_patch;
 
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
-				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
 
 				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
