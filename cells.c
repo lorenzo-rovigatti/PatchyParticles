@@ -13,14 +13,13 @@
 #include <float.h>
 #include <stdlib.h>
 
-void cells_init(System *syst, Output *output_files) {
+void cells_init(System *syst, Output *output_files, double rcut) {
 	syst->cells = (Cells *) malloc(sizeof(Cells));
 
 	Cells *cells = syst->cells;
-
 	int i;
 	for(i = 0; i < 3; i++) {
-		cells->N_side[i] = floor(syst->box[i] / (1. + syst->kf_delta));
+		cells->N_side[i] = floor(syst->box[i] / rcut);
 		if(cells->N_side[i] < 3) {
 			cells->N_side[i] = 3;
 			output_log_msg(output_files, "The size of the box along the %d-th dimension is too small, setting cells->N_side[%d] = 3\n", i, i);
@@ -31,16 +30,24 @@ void cells_init(System *syst, Output *output_files) {
 	cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
 	output_log_msg(output_files, "Cells per side: (%d, %d, %d), total: %d\n", cells->N_side[0], cells->N_side[1], cells->N_side[2], cells->N);
 
-	int ind[3];
 	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
+}
+
+int cells_fill_and_get_idx(System *syst, PatchyParticle *p, int idx[3]) {
+	idx[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	idx[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	idx[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
+
+	return (idx[0] * syst->cells->N_side[1] + idx[1]) * syst->cells->N_side[2] + idx[2];
+}
+
+void cells_fill(System *syst) {
+	int i, ind[3];
+	Cells *cells = syst->cells;
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
 
-		ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * cells->N_side[0]);
-		ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * cells->N_side[1]);
-		ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * cells->N_side[2]);
-
-		int cell_index = (ind[0] * cells->N_side[1] + ind[1]) * cells->N_side[2] + ind[2];
+		int cell_index = cells_fill_and_get_idx(syst, p, ind);
 		p->next = cells->heads[cell_index];
 		cells->heads[cell_index] = p;
 		p->cell = cell_index;

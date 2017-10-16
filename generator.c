@@ -9,18 +9,16 @@
 int would_overlap(System *syst, PatchyParticle *p, vector disp) {
 	int ind[3], loop_ind[3];
 	vector r = {p->r[0] + disp[0], p->r[1] + disp[1], p->r[2] + disp[2]};
-	ind[0] = (int) ((r[0] / syst->box[0] - floor(r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[1] = (int) ((r[1] / syst->box[1] - floor(r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-	ind[2] = (int) ((r[2] / syst->box[2] - floor(r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	cells_fill_and_get_idx(syst, p, ind);
 
 	int j, k, l;
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
-				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
 
 				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
@@ -58,10 +56,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
-			int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
+			int cell_index = cells_fill_and_get_idx(syst, p, ind);
 			p->next = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
@@ -104,20 +99,12 @@ int main(int argc, char *argv[]) {
 	new_syst.box[1] = pow(new_syst.N/density, 1./3.);
 	new_syst.box[2] = pow(new_syst.N/density, 1./3.);
 
-	Cells *cells = new_syst.cells;
-	cells->N_side = floor(new_syst.box[0]);
-	if(cells->N_side < 3) {
-		cells->N_side = 3;
-		fprintf(stderr, "Box side is too small, setting cells.N_side = 3\n");
-	}
-	cells->N = cells->N_side * cells->N_side * cells->N_side;
-	cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
-	fprintf(stderr, "Cells per side: %d, total: %d\n", cells->N_side, cells->N);
-
-	int i;
-	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
+	Output output_files;
+	output_files.log = stderr;
+	cells_init(&new_syst, &output_files, 1.);
 
 	new_syst.particles = malloc(new_syst.N * sizeof(PatchyParticle));
+	int i;
 	for(i = 0; i < new_syst.N; i++) {
 		PatchyParticle *p = new_syst.particles + i;
 		p->patches = NULL;

@@ -20,7 +20,9 @@ typedef struct Cells {
 	PatchyParticle **next;
 } Cells;
 
-void cells_init(System *syst, Output *IO);
+void cells_init(System *syst, Output *IO, double rcut);
+int cells_fill_and_get_idx(System *syst, PatchyParticle *p, int idx[3]);
+void cells_fill(System *syst);
 void cells_check(System *syst, Output *output_files);
 void cells_free(Cells *cells);
 

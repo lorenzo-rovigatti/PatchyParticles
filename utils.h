@@ -11,6 +11,15 @@
 #define COS120 -0.5
 #define SIN120 0.8660254037844386
 
+#define SQR(x) ((x) * (x))
+#define SCALAR(x, y) ((x)[0]*(y)[0] + (x)[1]*(y)[1] + (x)[2]*(y)[2])
+
+#define MATRIX_VECTOR_MULTIPLICATION(m, v, result) {\
+	(result)[0] = (m)[0][0]*(v)[0] + (m)[0][1]*(v)[1] + (m)[0][2]*(v)[2];\
+	(result)[1] = (m)[1][0]*(v)[0] + (m)[1][1]*(v)[1] + (m)[1][2]*(v)[2];\
+	(result)[2] = (m)[2][0]*(v)[0] + (m)[2][1]*(v)[1] + (m)[2][2]*(v)[2];\
+}
+
 #include "defs.h"
 
 void set_patches(System *syst, PatchyParticle *p);

@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 void output_init(input_file *input, Output *output_files) {
+	output_files->log = stderr;
 	output_files->restart_step_counter = 1;
 	getInputInt(input, "Restart_step_counter", &output_files->restart_step_counter, 0);
 	const char *mode = (output_files->restart_step_counter) ? "w" : "a";

@@ -157,7 +157,8 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	utils_reset_acceptance_counters(syst);
 
-	cells_init(syst, output_files);
+	cells_init(syst, output_files, 1. + syst->kf_delta);
+	cells_fill(syst);
 }
 
 void system_free(System *syst) {
@@ -165,7 +166,7 @@ void system_free(System *syst) {
 
 	int i;
 	if(syst->base_patches != NULL) free(syst->base_patches);
-	for(i = 0; i < syst->N; i++) {
+	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		if(p->patches != NULL) {
 			free(p->patches);

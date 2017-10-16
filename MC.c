@@ -160,11 +160,7 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
-
-	int cell_index = (ind[0] * syst->cells->N_side[1] + ind[1]) * syst->cells->N_side[2] + ind[2];
+	int cell_index = cells_fill_and_get_idx(syst, p, ind);
 	if(cell_index == p->cell) {
 		p->cell_old = p->cell;
 		return;
@@ -258,9 +254,7 @@ double energy(System *syst, PatchyParticle *p) {
 	double E = 0.;
 
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
-	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
-	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
+	cells_fill_and_get_idx(syst, p, ind);
 
 	int j, k, l, p_patch, q_patch;
 
@@ -356,16 +350,16 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
-			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
-			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
-			int cell_index = (ind[0] * syst->cells->N_side[1] + ind[1]) * syst->cells->N_side[2] + ind[2];
+			int cell_index = cells_fill_and_get_idx(syst, p, ind);
 			p->next = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
 
 			syst->N++;
 			syst->accepted[ADD]++;
+		}
+		else {
+			syst->overlap = 0;
 		}
 	}
 	// try to remove a particle
