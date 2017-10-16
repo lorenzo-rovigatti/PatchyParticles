@@ -30,7 +30,7 @@ int would_overlap(System *syst, PatchyParticle *p, vector disp) {
 
 						if(SCALAR(dist, dist) < 1.) return 1;
 					}
-					q = q->next;
+					q = syst->cells->next[q->index];
 				}
 			}
 		}
@@ -57,7 +57,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 			// add the particle to the new cell
 			int ind[3];
 			int cell_index = cells_fill_and_get_idx(syst, p, ind);
-			p->next = syst->cells->heads[cell_index];
+			syst->cells->next[p->index] = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
 

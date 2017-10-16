@@ -5,10 +5,9 @@
 #include <math.h>
 #include <float.h>
 
-vmmc_d * vmmcdata;
+vmmc_d *vmmcdata;
 
-void vmmc_init(input_file *input, System *syst, Output *IO) {
-
+void VMMC_init(input_file *input, System *syst, Output *IO) {
 	vmmcdata = malloc(sizeof(vmmc_d));
 
 	getInputDouble(input, "vmmc_max_move", &vmmcdata->max_move, 1);
@@ -28,7 +27,7 @@ void vmmc_init(input_file *input, System *syst, Output *IO) {
 	output_log_msg(IO, "Using VMMC dynamics with max_move = %lf, max_clust = %d on a system with %d particles\n", vmmcdata->max_move, vmmcdata->max_cluster, syst->N);
 }
 
-void vmmc_free() {
+void VMMC_free() {
 	free(vmmcdata->prelinked_particles);
 	free(vmmcdata->clust);
 	free(vmmcdata->is_in_cluster);
@@ -108,7 +107,7 @@ double _compute_cluster_energy(System *syst) {
 						if(vmmcdata->is_in_cluster[q->index] == 0) {
 							res += _pair_energy(syst, p, q);
 						}
-						q = q->next;
+						q = syst->cells->next[q->index];
 					}
 				}
 			}
@@ -162,7 +161,7 @@ void _populate_possible_links(System *syst, Output *output_files, PatchyParticle
 							}
 						}
 					}
-					q = q->next;
+					q = syst->cells->next[q->index];
 				}
 			}
 		}
@@ -201,7 +200,7 @@ void _move_particle(System * syst, PatchyParticle * p, vector move, double t) {
 	}
 }
 
-void vmmc_dynamics(System *syst, Output *output_files) {
+void VMMC_dynamics(System *syst, Output *output_files) {
 	syst->tries[MOVE_VMMC]++;
 
 	// initialization of things

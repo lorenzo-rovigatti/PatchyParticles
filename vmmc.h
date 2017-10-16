@@ -22,9 +22,9 @@ typedef struct vmmc_d {
 	matrix rotation;
 } vmmc_d;
 
-void vmmc_init(input_file *input, System *syst, Output *IO);
-void vmmc_free();
+void VMMC_init(input_file *input, System *syst, Output *IO);
+void VMMC_free();
 
-void vmmc_dynamics(System *syst, Output *IO);
+void VMMC_dynamics(System *syst, Output *IO);
 
 #endif

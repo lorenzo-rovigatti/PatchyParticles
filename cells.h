@@ -16,7 +16,6 @@ typedef struct Cells {
 	int N_side[3];
 	int N;
 	PatchyParticle **heads;
-	// TODO: implement this
 	PatchyParticle **next;
 } Cells;
 

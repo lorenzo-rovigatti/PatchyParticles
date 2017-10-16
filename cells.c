@@ -28,6 +28,7 @@ void cells_init(System *syst, Output *output_files, double rcut) {
 
 	cells->N = cells->N_side[0] * cells->N_side[1] * cells->N_side[2];
 	cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
+	cells->next = malloc(sizeof(PatchyParticle *) * syst->N_max);
 	output_log_msg(output_files, "Cells per side: (%d, %d, %d), total: %d\n", cells->N_side[0], cells->N_side[1], cells->N_side[2], cells->N);
 
 	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
@@ -48,7 +49,7 @@ void cells_fill(System *syst) {
 		PatchyParticle *p = syst->particles + i;
 
 		int cell_index = cells_fill_and_get_idx(syst, p, ind);
-		p->next = cells->heads[cell_index];
+		cells->next[p->index] = cells->heads[cell_index];
 		cells->heads[cell_index] = p;
 		p->cell = cell_index;
 		p->cell_old = cell_index;
@@ -60,7 +61,7 @@ void cells_check(System *syst, Output *output_files) {
 	for(i = 0, counter = 0; i < syst->cells->N; i++) {
 		PatchyParticle *p = syst->cells->heads[i];
 		while(p != NULL) {
-			p = p->next;
+			p = syst->cells->next[p->index];
 			counter++;
 		}
 	}
@@ -70,5 +71,6 @@ void cells_check(System *syst, Output *output_files) {
 
 void cells_free(Cells *cells) {
 	free(cells->heads);
+	free(cells->next);
 	free(cells);
 }

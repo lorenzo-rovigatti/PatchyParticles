@@ -22,7 +22,6 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 	avbdata->avb_vout = syst->V - avbdata->avb_vin;
 	avbdata->avb_p = 0.5;
 	getInputDouble(input, "avb_p", &avbdata->avb_p, 0);
-
 }
 
 void AVBMC_free() {
@@ -57,7 +56,7 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 							avbdata->num_neighbours++;
 						}
 					}
-					q = q->next;
+					q = syst->cells->next[q->index];
 				}
 			}
 		}

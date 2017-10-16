@@ -48,7 +48,6 @@ typedef struct PatchyParticle {
 	vector *patches, *base_patches;
 
 	int cell, cell_old;
-	struct PatchyParticle *next;
 } PatchyParticle;
 
 typedef struct Output {

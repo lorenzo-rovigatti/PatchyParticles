@@ -49,6 +49,8 @@ _etc._
 * The `avb.c, avb.h` and `vmmc.c, vmmc.h` pairs contain the data structures and 
 functions pertaining to the Aggregation-Volume-Bias and Virtual-Move-Monte-Carlo moves
 that can be optionally enabled to speed up the simulation efficiencies.
+* The `cells.c, cells.h` pair contain the data structures and functions pertaining to the
+linked-lists used to keep track of the list of neighbours of each particle.
 * The `utils.c, utils.h` pair contains commonly-used functions to work with vectors
 and matrices.
 * The `system.c, system.h` pair contains the functions used to initialise and cleanup
