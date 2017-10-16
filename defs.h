@@ -38,6 +38,8 @@
 	(result)[2] = (m)[2][0]*(v)[0] + (m)[2][1]*(v)[1] + (m)[2][2]*(v)[2];\
 }
 
+#include "cells.h"
+
 #include <stdio.h>
 #include <complex.h>
 #include <assert.h>
@@ -59,14 +61,6 @@ typedef struct PatchyParticle {
 	struct PatchyParticle *next;
 } PatchyParticle;
 
-typedef struct Cells {
-	int N_side;
-	int N;
-	PatchyParticle **heads;
-	// TODO: implement this
-	PatchyParticle **next;
-} Cells;
-
 typedef struct Output {
 	llint start_from;
 	llint save_every;
@@ -83,7 +77,7 @@ typedef struct Output {
 
 typedef struct System {
 	int N, N_min, N_max;
-	double box;
+	vector box;
 	double V;
 	double T;
 	double z;
@@ -115,7 +109,7 @@ typedef struct System {
 
 	double kf_delta, kf_cosmax, kf_sqr_rcut;
 
-	Cells cells;
+	Cells *cells;
 
 	int seed;
 	PatchyParticle *particles;

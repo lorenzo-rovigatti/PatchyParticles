@@ -23,9 +23,9 @@ void _do_widom(System *syst) {
 	p.patches = malloc(sizeof(vector) * syst->n_patches);
 	int i;
 	for(i = 0; i < 1000000; i++) {
-		p.r[0] = drand48() * syst->box;
-		p.r[1] = drand48() * syst->box;
-		p.r[2] = drand48() * syst->box;
+		p.r[0] = drand48() * syst->box[0];
+		p.r[1] = drand48() * syst->box[1];
+		p.r[2] = drand48() * syst->box[2];
 
 		random_orientation(syst, p.orientation);
 
@@ -141,16 +141,16 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 	// bring back the particle in the old cell
 	if(p->cell != p->cell_old) {
-		if(syst->cells.heads[p->cell]->index == p->index) syst->cells.heads[p->cell] = p->next;
+		if(syst->cells->heads[p->cell]->index == p->index) syst->cells->heads[p->cell] = p->next;
 		else {
-			PatchyParticle *q = syst->cells.heads[p->cell];
+			PatchyParticle *q = syst->cells->heads[p->cell];
 			while(q->next != p)
 				q = q->next;
 			q->next = p->next;
 		}
 
-		PatchyParticle *old = syst->cells.heads[p->cell_old];
-		syst->cells.heads[p->cell_old] = p;
+		PatchyParticle *old = syst->cells->heads[p->cell_old];
+		syst->cells->heads[p->cell_old] = p;
 		p->next = old;
 		int c_old = p->cell;
 		p->cell = p->cell_old;
@@ -160,11 +160,11 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
 
-	int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
+	int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
 	if(cell_index == p->cell) {
 		p->cell_old = p->cell;
 		return;
@@ -172,19 +172,19 @@ void change_cell(System *syst, PatchyParticle *p) {
 
 	// remove the particle from the old cell
 	PatchyParticle *previous = NULL;
-	PatchyParticle *current = syst->cells.heads[p->cell];
+	PatchyParticle *current = syst->cells->heads[p->cell];
 	assert(current != NULL);
 	while(current->index != p->index) {
 		previous = current;
 		current = current->next;
 		assert(previous->next->index == current->index);
 	}
-	if(previous == NULL) syst->cells.heads[p->cell] = p->next;
+	if(previous == NULL) syst->cells->heads[p->cell] = p->next;
 	else previous->next = p->next;
 
 	// add the particle to the new cell
-	p->next = syst->cells.heads[cell_index];
-	syst->cells.heads[cell_index] = p;
+	p->next = syst->cells->heads[cell_index];
+	syst->cells->heads[cell_index] = p;
 	p->cell_old = p->cell;
 	p->cell = cell_index;
 }
@@ -215,9 +215,9 @@ void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector 
 
 int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches, int *onp, int *onq) {
 	vector dist = {r[0] - p->r[0], r[1] - p->r[1], r[2] - p->r[2]};
-	dist[0] -= syst->box * rint(dist[0] / syst->box);
-	dist[1] -= syst->box * rint(dist[1] / syst->box);
-	dist[2] -= syst->box * rint(dist[2] / syst->box);
+	dist[0] -= syst->box[0] * rint(dist[0] / syst->box[0]);
+	dist[1] -= syst->box[1] * rint(dist[1] / syst->box[1]);
+	dist[2] -= syst->box[2] * rint(dist[2] / syst->box[2]);
 
 	double dist2 = SCALAR(dist, dist);
 
@@ -258,21 +258,21 @@ double energy(System *syst, PatchyParticle *p) {
 	double E = 0.;
 
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
 
 	int j, k, l, p_patch, q_patch;
 
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells.N_side) % syst->cells.N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells.N_side) % syst->cells.N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells.N_side) % syst->cells.N_side;
-				int loop_index = (loop_ind[0] * syst->cells.N_side + loop_ind[1]) * syst->cells.N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
+				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
 
-				PatchyParticle *q = syst->cells.heads[loop_index];
+				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
 					if(q->index != p->index) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
@@ -337,9 +337,9 @@ void MC_add_remove(System *syst, Output *IO) {
 		PatchyParticle *p = syst->particles + syst->N;
 		p->index = syst->N;
 
-		p->r[0] = drand48() * syst->box;
-		p->r[1] = drand48() * syst->box;
-		p->r[2] = drand48() * syst->box;
+		p->r[0] = drand48() * syst->box[0];
+		p->r[1] = drand48() * syst->box[1];
+		p->r[2] = drand48() * syst->box[2];
 
 		random_orientation(syst, p->orientation);
 
@@ -356,12 +356,12 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
-			p->next = syst->cells.heads[cell_index];
-			syst->cells.heads[cell_index] = p;
+			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
+			p->next = syst->cells->heads[cell_index];
+			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
 
 			syst->N++;
@@ -383,14 +383,14 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// remove the particle from the old cell
 			PatchyParticle *previous = NULL;
-			PatchyParticle *current = syst->cells.heads[p->cell];
+			PatchyParticle *current = syst->cells->heads[p->cell];
 			assert(current != NULL);
 			while(current->index != p->index) {
 				previous = current;
 				current = current->next;
 				assert(previous->next->index == current->index);
 			}
-			if(previous == NULL) syst->cells.heads[p->cell] = p->next;
+			if(previous == NULL) syst->cells->heads[p->cell] = p->next;
 			else previous->next = p->next;
 
 			if(p->index != syst->N) {
@@ -399,14 +399,14 @@ void MC_add_remove(System *syst, Output *IO) {
 				// we have to change the last particle's identity
 				// first we remove it from its cell
 				previous = NULL;
-				current = syst->cells.heads[q->cell];
+				current = syst->cells->heads[q->cell];
 				assert(current != NULL);
 				while(current->index != q->index) {
 					previous = current;
 					current = current->next;
 					assert(previous->next->index == current->index);
 				}
-				if(previous == NULL) syst->cells.heads[q->cell] = q->next;
+				if(previous == NULL) syst->cells->heads[q->cell] = q->next;
 				else previous->next = q->next;
 
 				// copy its type, position and patches onto p's memory position
@@ -424,8 +424,8 @@ void MC_add_remove(System *syst, Output *IO) {
 
 				// and finally add it back to its former cell
 				p->cell = q->cell;
-				p->next = syst->cells.heads[p->cell];
-				syst->cells.heads[p->cell] = p;
+				p->next = syst->cells->heads[p->cell];
+				syst->cells->heads[p->cell] = p;
 			}
 
 			syst->accepted[REMOVE]++;

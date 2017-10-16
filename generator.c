@@ -9,26 +9,26 @@
 int would_overlap(System *syst, PatchyParticle *p, vector disp) {
 	int ind[3], loop_ind[3];
 	vector r = {p->r[0] + disp[0], p->r[1] + disp[1], p->r[2] + disp[2]};
-	ind[0] = (int) ((r[0] / syst->box - floor(r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((r[1] / syst->box - floor(r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((r[2] / syst->box - floor(r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((r[0] / syst->box[0] - floor(r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[1] = (int) ((r[1] / syst->box[1] - floor(r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[2] = (int) ((r[2] / syst->box[2] - floor(r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
 
 	int j, k, l;
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells.N_side) % syst->cells.N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells.N_side) % syst->cells.N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells.N_side) % syst->cells.N_side;
-				int loop_index = (loop_ind[0] * syst->cells.N_side + loop_ind[1]) * syst->cells.N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
+				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
 
-				PatchyParticle *q = syst->cells.heads[loop_index];
+				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
 					if(q->index != p->index) {
 						vector dist = {q->r[0] - r[0], q->r[1] - r[1], q->r[2] - r[2]};
-						dist[0] -= syst->box * rint(dist[0] / syst->box);
-						dist[1] -= syst->box * rint(dist[1] / syst->box);
-						dist[2] -= syst->box * rint(dist[2] / syst->box);
+						dist[0] -= syst->box[0] * rint(dist[0] / syst->box[0]);
+						dist[1] -= syst->box[1] * rint(dist[1] / syst->box[1]);
+						dist[2] -= syst->box[2] * rint(dist[2] / syst->box[2]);
 
 						if(SCALAR(dist, dist) < 1.) return 1;
 					}
@@ -45,7 +45,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 	int inserted = 0;
 	while(inserted < syst->N) {
 		// extract a new position
-		vector r = { drand48() * syst->box, drand48() * syst->box, drand48() * syst->box };
+		vector r = { drand48() * syst->box[0], drand48() * syst->box[1], drand48() * syst->box[2] };
 		PatchyParticle *p = syst->particles + inserted;
 		p->r[0] = p->r[1] = p->r[2] = 0.;
 		p->index = inserted;
@@ -58,12 +58,12 @@ void make_initial_conf(System *syst, char *conf_name) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
-			p->next = syst->cells.heads[cell_index];
-			syst->cells.heads[cell_index] = p;
+			ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+			int cell_index = (ind[0] * syst->cells->N_side + ind[1]) * syst->cells->N_side + ind[2];
+			p->next = syst->cells->heads[cell_index];
+			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
 
 			inserted++;
@@ -74,7 +74,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 	FILE *out = fopen(conf_name, "w");
 	if(out == NULL) fprintf(stderr, "File '%s' is not writable\n", conf_name);
 
-	fprintf(out, "0 %d %lf %lf %lf\n", syst->N, syst->box, syst->box, syst->box);
+	fprintf(out, "0 %d %lf %lf %lf\n", syst->N, syst->box[0], syst->box[1], syst->box[2]);
 
 	int i;
 	PatchyParticle *p = syst->particles;
@@ -100,10 +100,12 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "This simple generator cannot produce configurations with density higher than 0.7\n");
 		exit(1);
 	}
-	new_syst.box = pow(new_syst.N/density, 1./3.);
+	new_syst.box[0] = pow(new_syst.N/density, 1./3.);
+	new_syst.box[1] = pow(new_syst.N/density, 1./3.);
+	new_syst.box[2] = pow(new_syst.N/density, 1./3.);
 
-	Cells *cells = &new_syst.cells;
-	cells->N_side = floor(new_syst.box);
+	Cells *cells = new_syst.cells;
+	cells->N_side = floor(new_syst.box[0]);
 	if(cells->N_side < 3) {
 		cells->N_side = 3;
 		fprintf(stderr, "Box side is too small, setting cells.N_side = 3\n");

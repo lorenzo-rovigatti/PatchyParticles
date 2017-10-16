@@ -16,35 +16,7 @@
 #include "output.h"
 #include "utils.h"
 
-void _init_cells(System *syst, Output *IO) {
-	Cells *cells = &syst->cells;
-	cells->N_side = floor(syst->box / (1. + syst->kf_delta));
-	if(cells->N_side < 3) {
-		cells->N_side = 3;
-		output_log_msg(IO, "Box side is too small, setting cells.N_side = 3\n");
-	}
-	cells->N = cells->N_side * cells->N_side * cells->N_side;
-	cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
-	output_log_msg(IO, "Cells per side: %d, total: %d\n", cells->N_side, cells->N);
-
-	int i, ind[3];
-	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
-	for(i = 0; i < syst->N; i++) {
-		PatchyParticle *p = syst->particles + i;
-
-		ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
-		ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
-		ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
-
-		int cell_index = (ind[0] * cells->N_side + ind[1]) * cells->N_side + ind[2];
-		p->next = cells->heads[cell_index];
-		cells->heads[cell_index] = p;
-		p->cell = cell_index;
-		p->cell_old = cell_index;
-	}
-}
-
-void _init_tetrahedral_patches(System *syst, Output *IO) {
+void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	syst->n_patches = 4;
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
 	double half_isqrt3 = 0.5 / sqrt(3);
@@ -80,7 +52,7 @@ void _init_tetrahedral_patches(System *syst, Output *IO) {
 	}
 }
 
-void system_init(input_file *input, System *syst, Output *IO) {
+void system_init(input_file *input, System *syst, Output *output_files) {
 	int res, i;
 
 	getInputInt(input, "Dynamics", &syst->dynamics, 1);
@@ -94,22 +66,22 @@ void system_init(input_file *input, System *syst, Output *IO) {
 	getInputString(input, "Initial_conditions_file", name, 1);
 	if(getInputInt(input, "Seed", &syst->seed, 0) == KEY_NOT_FOUND) {
 		syst->seed = time(NULL);
-		output_log_msg(IO, "Using seed %d\n", syst->seed);
+		output_log_msg(output_files, "Using seed %d\n", syst->seed);
 	}
 	srand48(syst->seed);
 
 	FILE *conf = fopen(name, "r");
-	if(conf == NULL) output_exit(IO, "Initial_conditions_file '%s' is not readable\n", name);
+	if(conf == NULL) output_exit(output_files, "Initial_conditions_file '%s' is not readable\n", name);
 
-	res = fscanf(conf, "%*d %d %lf %*f %*f\n", &syst->N, &syst->box);
-	if(res != 2) output_exit(IO, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
+	res = fscanf(conf, "%*d %d %lf %lf %lf\n", &syst->N, syst->box, syst->box + 1, syst->box + 2);
+	if(res != 4) output_exit(output_files, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
 
 	getInputDouble(input, "KF_delta", &syst->kf_delta, 1);
 	getInputDouble(input, "KF_cosmax", &syst->kf_cosmax, 1);
 
 	syst->kf_sqr_rcut = SQR(1. + syst->kf_delta);
 
-	output_log_msg(IO, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax, syst->kf_delta);
+	output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax, syst->kf_delta);
 
 	if(syst->ensemble != NVT) {
 		getInputDouble(input, "Activity", &syst->z, 1);
@@ -121,12 +93,12 @@ void system_init(input_file *input, System *syst, Output *IO) {
 		case SUS:
 			getInputInt(input, "Umbrella_sampling_min", &syst->N_min, 1);
 			getInputInt(input, "Umbrella_sampling_max", &syst->N_max, 1);
-			if(syst->N < syst->N_min) output_exit(IO, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
-			if(syst->N > syst->N_max) output_exit(IO, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			if(syst->N < syst->N_min) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
+			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
 			syst->SUS_hist = calloc(syst->N_max - syst->N_min + 1, sizeof(llint));
 			break;
 		default:
-			output_exit(IO, "Unsupported ensemble '%d'\n", syst->ensemble);
+			output_exit(output_files, "Unsupported ensemble '%d'\n", syst->ensemble);
 			break;
 		}
 	}
@@ -134,12 +106,12 @@ void system_init(input_file *input, System *syst, Output *IO) {
 		syst->N_max = syst->N;
 	}
 
-	syst->V = syst->box * syst->box * syst->box;
+	syst->V = syst->box[0] * syst->box[1] * syst->box[2];
 	syst->particles = malloc(syst->N_max * sizeof(PatchyParticle));
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	_init_tetrahedral_patches(syst, IO);
+	_init_tetrahedral_patches(syst, output_files);
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
@@ -181,14 +153,16 @@ void system_init(input_file *input, System *syst, Output *IO) {
 		s_res = fgets(myline, 512, conf);
 	}
 	fclose(conf);
-	if(i != syst->N) output_exit(IO, "Number of particles found in configuration (%d) is different from the value found in the header (%d)\n", i, syst->N);
+	if(i != syst->N) output_exit(output_files, "Number of particles found in configuration (%d) is different from the value found in the header (%d)\n", i, syst->N);
 
 	utils_reset_acceptance_counters(syst);
 
-	_init_cells(syst, IO);
+	cells_init(syst, output_files);
 }
 
 void system_free(System *syst) {
+	cells_free(syst->cells);
+
 	int i;
 	if(syst->base_patches != NULL) free(syst->base_patches);
 	for(i = 0; i < syst->N; i++) {
@@ -198,19 +172,5 @@ void system_free(System *syst) {
 		}
 	}
 	free(syst->particles);
-	free(syst->cells.heads);
 	if(syst->ensemble == 3) free(syst->SUS_hist);
-}
-
-void check_cells(System *syst, Output *IO) {
-	int i, counter;
-	for(i = 0, counter = 0; i < syst->cells.N; i++) {
-		PatchyParticle *p = syst->cells.heads[i];
-		while(p != NULL) {
-			p = p->next;
-			counter++;
-		}
-	}
-
-	if(counter != syst->N) output_exit(IO, "\nThere are %d particles in cells, should be %d\n", counter, syst->N);
 }

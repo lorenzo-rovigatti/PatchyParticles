@@ -32,9 +32,9 @@ void AVBMC_free() {
 
 void _set_neighbours(System *syst, PatchyParticle *p) {
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side);
+	ind[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side);
 
 	avbdata->num_neighbours = 0;
 	memset(avbdata->neighbours, 0, p->n_patches * sizeof(PatchyParticle*));
@@ -42,14 +42,14 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 	int j, k, l, p_patch, q_patch;
 
 	for(j = -1; j < 2; j++) {
-		loop_ind[0] = (ind[0] + j + syst->cells.N_side) % syst->cells.N_side;
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side) % syst->cells->N_side;
 		for(k = -1; k < 2; k++) {
-			loop_ind[1] = (ind[1] + k + syst->cells.N_side) % syst->cells.N_side;
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side) % syst->cells->N_side;
 			for(l = -1; l < 2; l++) {
-				loop_ind[2] = (ind[2] + l + syst->cells.N_side) % syst->cells.N_side;
-				int loop_index = (loop_ind[0] * syst->cells.N_side + loop_ind[1]) * syst->cells.N_side + loop_ind[2];
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side) % syst->cells->N_side;
+				int loop_index = (loop_ind[0] * syst->cells->N_side + loop_ind[1]) * syst->cells->N_side + loop_ind[2];
 
-				PatchyParticle *q = syst->cells.heads[loop_index];
+				PatchyParticle *q = syst->cells->heads[loop_index];
 				while(q != NULL) {
 					if(q->index != p->index) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
@@ -149,9 +149,9 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 			vector new_patches[syst->n_patches];
 			int buff;
 			do {
-				new_r[0] = drand48() * syst->box;
-				new_r[1] = drand48() * syst->box;
-				new_r[2] = drand48() * syst->box;
+				new_r[0] = drand48() * syst->box[0];
+				new_r[1] = drand48() * syst->box[1];
+				new_r[2] = drand48() * syst->box[2];
 				random_orientation(syst, new_orient);
 				for(i = 0; i < syst->n_patches; i++)
 					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_patches[i]);

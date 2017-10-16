@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
 
 			if(curr_step != 0) {
 				check_energy(&syst, &output_files);
-				check_cells(&syst, &output_files);
+				cells_check(&syst, &output_files);
 
 				if(syst.ensemble == SUS) output_sus(&output_files, &syst, curr_step);
 			}
