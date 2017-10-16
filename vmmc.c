@@ -93,9 +93,9 @@ double _compute_cluster_energy(System *syst) {
 		PatchyParticle * p = vmmcdata->clust[i];
 		assert (vmmcdata->is_in_cluster[p->index] == 1);
 		int ind[3];
-		ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-		ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-		ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+		ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+		ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+		ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 		int j, k, l;
 		int loop_ind[3];
 		for(j = -1; j < 2; j++) {
@@ -123,9 +123,9 @@ double _compute_cluster_energy(System *syst) {
 void _populate_possible_links(System * syst, PatchyParticle *p) {
 	// get a list of possible links that can be formed by p
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 	
 	assert (vmmcdata->is_in_cluster[p->index] == 1);
 	
@@ -146,9 +146,9 @@ void _populate_possible_links(System * syst, PatchyParticle *p) {
 					//if(vmmcdata->is_in_cluster[q->index] == 0 && q->index != p->index) {
 					if(q->index != p->index) {
 						vector dist = {q->r[0] - p->r[0], q->r[1] - p->r[1], q->r[2] - p->r[2]};
-						dist[0] -= syst->L * rint(dist[0] / syst->L);
-						dist[1] -= syst->L * rint(dist[1] / syst->L);
-						dist[2] -= syst->L * rint(dist[2] / syst->L);
+						dist[0] -= syst->box * rint(dist[0] / syst->box);
+						dist[1] -= syst->box * rint(dist[1] / syst->box);
+						dist[2] -= syst->box * rint(dist[2] / syst->box);
 						double dist2 = SCALAR(dist, dist);
 						
 						if (dist2 < syst->kf_sqr_rcut) {
@@ -192,9 +192,9 @@ void _move_particle(System * syst, PatchyParticle * p, vector move, double t) {
 		dr_tmp[0] = p->r[0] - seed->r[0];
 		dr_tmp[1] = p->r[1] - seed->r[1];
 		dr_tmp[2] = p->r[2] - seed->r[2];
-		dr_tmp[0] -= syst->L * rint(dr_tmp[0] / syst->L);
-		dr_tmp[1] -= syst->L * rint(dr_tmp[1] / syst->L);
-		dr_tmp[2] -= syst->L * rint(dr_tmp[2] / syst->L);
+		dr_tmp[0] -= syst->box * rint(dr_tmp[0] / syst->box);
+		dr_tmp[1] -= syst->box * rint(dr_tmp[1] / syst->box);
+		dr_tmp[2] -= syst->box * rint(dr_tmp[2] / syst->box);
 		MATRIX_VECTOR_MULTIPLICATION(vmmcdata->rotation, dr_tmp, dr);
 		p->r[0] = seed->r[0] + dr[0];
 		p->r[1] = seed->r[1] + dr[1];

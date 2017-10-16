@@ -23,9 +23,9 @@ void _do_widom(System *syst) {
 	p.patches = malloc(sizeof(vector) * syst->n_patches);
 	int i;
 	for(i = 0; i < 1000000; i++) {
-		p.r[0] = drand48() * syst->L;
-		p.r[1] = drand48() * syst->L;
-		p.r[2] = drand48() * syst->L;
+		p.r[0] = drand48() * syst->box;
+		p.r[1] = drand48() * syst->box;
+		p.r[2] = drand48() * syst->box;
 
 		random_orientation(syst, p.orientation);
 
@@ -160,9 +160,9 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
-	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 
 	int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
 	if(cell_index == p->cell) {
@@ -215,9 +215,9 @@ void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector 
 
 int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches, int *onp, int *onq) {
 	vector dist = {r[0] - p->r[0], r[1] - p->r[1], r[2] - p->r[2]};
-	dist[0] -= syst->L * rint(dist[0] / syst->L);
-	dist[1] -= syst->L * rint(dist[1] / syst->L);
-	dist[2] -= syst->L * rint(dist[2] / syst->L);
+	dist[0] -= syst->box * rint(dist[0] / syst->box);
+	dist[1] -= syst->box * rint(dist[1] / syst->box);
+	dist[2] -= syst->box * rint(dist[2] / syst->box);
 
 	double dist2 = SCALAR(dist, dist);
 
@@ -258,9 +258,9 @@ double energy(System *syst, PatchyParticle *p) {
 	double E = 0.;
 
 	int ind[3], loop_ind[3];
-	ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-	ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+	ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 
 	int j, k, l, p_patch, q_patch;
 
@@ -337,9 +337,9 @@ void MC_add_remove(System *syst, Output *IO) {
 		PatchyParticle *p = syst->particles + syst->N;
 		p->index = syst->N;
 
-		p->r[0] = drand48() * syst->L;
-		p->r[1] = drand48() * syst->L;
-		p->r[2] = drand48() * syst->L;
+		p->r[0] = drand48() * syst->box;
+		p->r[1] = drand48() * syst->box;
+		p->r[2] = drand48() * syst->box;
 
 		random_orientation(syst, p->orientation);
 
@@ -356,9 +356,9 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// add the particle to the new cell
 			int ind[3];
-			ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
-			ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+			ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+			ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
+			ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * syst->cells.N_side);
 			int cell_index = (ind[0] * syst->cells.N_side + ind[1]) * syst->cells.N_side + ind[2];
 			p->next = syst->cells.heads[cell_index];
 			syst->cells.heads[cell_index] = p;

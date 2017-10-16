@@ -83,7 +83,7 @@ typedef struct Output {
 
 typedef struct System {
 	int N, N_min, N_max;
-	double L;
+	double box;
 	double V;
 	double T;
 	double z;

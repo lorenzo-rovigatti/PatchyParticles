@@ -18,7 +18,7 @@
 
 void _init_cells(System *syst, Output *IO) {
 	Cells *cells = &syst->cells;
-	cells->N_side = floor(syst->L / (1. + syst->kf_delta));
+	cells->N_side = floor(syst->box / (1. + syst->kf_delta));
 	if(cells->N_side < 3) {
 		cells->N_side = 3;
 		output_log_msg(IO, "Box side is too small, setting cells.N_side = 3\n");
@@ -32,9 +32,9 @@ void _init_cells(System *syst, Output *IO) {
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
 
-		ind[0] = (int) ((p->r[0] / syst->L - floor(p->r[0] / syst->L)) * (1. - DBL_EPSILON) * cells->N_side);
-		ind[1] = (int) ((p->r[1] / syst->L - floor(p->r[1] / syst->L)) * (1. - DBL_EPSILON) * cells->N_side);
-		ind[2] = (int) ((p->r[2] / syst->L - floor(p->r[2] / syst->L)) * (1. - DBL_EPSILON) * cells->N_side);
+		ind[0] = (int) ((p->r[0] / syst->box - floor(p->r[0] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
+		ind[1] = (int) ((p->r[1] / syst->box - floor(p->r[1] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
+		ind[2] = (int) ((p->r[2] / syst->box - floor(p->r[2] / syst->box)) * (1. - DBL_EPSILON) * cells->N_side);
 
 		int cell_index = (ind[0] * cells->N_side + ind[1]) * cells->N_side + ind[2];
 		p->next = cells->heads[cell_index];
@@ -101,7 +101,7 @@ void system_init(input_file *input, System *syst, Output *IO) {
 	FILE *conf = fopen(name, "r");
 	if(conf == NULL) output_exit(IO, "Initial_conditions_file '%s' is not readable\n", name);
 
-	res = fscanf(conf, "%*d %d %lf %*f %*f\n", &syst->N, &syst->L);
+	res = fscanf(conf, "%*d %d %lf %*f %*f\n", &syst->N, &syst->box);
 	if(res != 2) output_exit(IO, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
 
 	getInputDouble(input, "KF_delta", &syst->kf_delta, 1);
@@ -134,7 +134,7 @@ void system_init(input_file *input, System *syst, Output *IO) {
 		syst->N_max = syst->N;
 	}
 
-	syst->V = syst->L * syst->L * syst->L;
+	syst->V = syst->box * syst->box * syst->box;
 	syst->particles = malloc(syst->N_max * sizeof(PatchyParticle));
 	syst->energy = 0;
 	syst->overlap = 0;
