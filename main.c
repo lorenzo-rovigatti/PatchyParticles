@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
 	syst.energy = 0;
 	for(i = 0; i < syst.N; i++)	{
 		syst.energy += energy(&syst, syst.particles + i);
+		if(syst.overlap == 1) output_exit(&output_files, "Initial configuration contains an overlap, aborting\n");
 	}
 	syst.energy *= 0.5;
-	if(syst.overlap == 1) output_exit(&output_files, "Initial configuration contains an overlap, aborting\n");
 
 	double E = (syst.N > 0) ? syst.energy / syst.N : 0;
 	output_log_msg(&output_files, "Initial energy: %lf\n", E);
