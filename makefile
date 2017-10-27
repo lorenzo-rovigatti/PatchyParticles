@@ -41,7 +41,7 @@ default: PatchyParticles generator
 
 all: PatchyParticles generator
 
-generator: generator.o $(OJB)
+generator: generator.o $(OBJ)
 	$(CC) generator.o $(OBJ) $(LIBRARY_DIRS) -lm -o generator
 
 PatchyParticles: main.o $(OBJ)
@@ -53,4 +53,4 @@ PatchyParticles: main.o $(OBJ)
 
 
 clean:
-	rm -f $(EXE) $(OBJ) main.o
+	rm -f $(EXE) $(OBJ) main.o generator generator.o

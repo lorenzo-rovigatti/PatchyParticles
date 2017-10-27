@@ -9,7 +9,7 @@
 int would_overlap(System *syst, PatchyParticle *p, vector disp) {
 	int ind[3], loop_ind[3];
 	vector r = {p->r[0] + disp[0], p->r[1] + disp[1], p->r[2] + disp[2]};
-	cells_fill_and_get_idx(syst, p, ind);
+	cells_fill_and_get_idx_from_vector(syst, r, ind);
 
 	int j, k, l;
 	for(j = -1; j < 2; j++) {
@@ -56,7 +56,7 @@ void make_initial_conf(System *syst, char *conf_name) {
 
 			// add the particle to the new cell
 			int ind[3];
-			int cell_index = cells_fill_and_get_idx(syst, p, ind);
+			int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
 			syst->cells->next[p->index] = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	System new_syst;
-	new_syst.N = atoi(argv[1]);
+	new_syst.N = new_syst.N_max = atoi(argv[1]);
 	double density = atof(argv[2]);
 	if(density > 0.7) {
 		fprintf(stderr, "This simple generator cannot produce configurations with density higher than 0.7\n");
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 	}
 	char name[512] = "generated.rrr";
 	make_initial_conf(&new_syst, name);
-	fprintf(stderr, "Generation done\n");
+	fprintf(stderr, "Generation done. The new configuration has been written to the file '%s'\n", name);
 
 	free(new_syst.particles);
 

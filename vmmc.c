@@ -91,7 +91,7 @@ double _compute_cluster_energy(System *syst) {
 		PatchyParticle * p = vmmcdata->clust[i];
 		assert(vmmcdata->is_in_cluster[p->index] == 1);
 		int ind[3];
-		cells_fill_and_get_idx(syst, p, ind);
+		cells_fill_and_get_idx_from_particle(syst, p, ind);
 		int j, k, l;
 		int loop_ind[3];
 		for(j = -1; j < 2; j++) {
@@ -119,7 +119,7 @@ double _compute_cluster_energy(System *syst) {
 void _populate_possible_links(System *syst, Output *output_files, PatchyParticle *p) {
 	// get a list of possible links that can be formed by p
 	int ind[3];
-	cells_fill_and_get_idx(syst, p, ind);
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
 
 	assert(vmmcdata->is_in_cluster[p->index] == 1);
 

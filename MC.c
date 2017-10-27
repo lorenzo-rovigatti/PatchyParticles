@@ -162,7 +162,7 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 
 void change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
-	int cell_index = cells_fill_and_get_idx(syst, p, ind);
+	int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
 	if(cell_index == p->cell) {
 		p->cell_old = p->cell;
 		return;
@@ -257,7 +257,7 @@ double energy(System *syst, PatchyParticle *p) {
 	double E = 0.;
 
 	int ind[3], loop_ind[3];
-	cells_fill_and_get_idx(syst, p, ind);
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
 
 	int j, k, l, p_patch, q_patch;
 
@@ -353,7 +353,7 @@ void MC_add_remove(System *syst, Output *IO) {
 
 			// add the particle to the new cell
 			int ind[3];
-			int cell_index = cells_fill_and_get_idx(syst, p, ind);
+			int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
 			syst->cells->next[p->index] = syst->cells->heads[cell_index];
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;

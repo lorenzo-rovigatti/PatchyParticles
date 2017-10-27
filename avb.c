@@ -31,7 +31,7 @@ void AVBMC_free() {
 
 void _set_neighbours(System *syst, PatchyParticle *p) {
 	int ind[3], loop_ind[3];
-	cells_fill_and_get_idx(syst, p, ind);
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
 
 	avbdata->num_neighbours = 0;
 	memset(avbdata->neighbours, 0, p->n_patches * sizeof(PatchyParticle*));

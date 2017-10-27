@@ -32,12 +32,17 @@ void cells_init(System *syst, Output *output_files, double rcut) {
 	output_log_msg(output_files, "Cells per side: (%d, %d, %d), total: %d\n", cells->N_side[0], cells->N_side[1], cells->N_side[2], cells->N);
 
 	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
+	for(i = 0; i < syst->N_max; i++) cells->next[i] = NULL;
 }
 
-int cells_fill_and_get_idx(System *syst, PatchyParticle *p, int idx[3]) {
-	idx[0] = (int) ((p->r[0] / syst->box[0] - floor(p->r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
-	idx[1] = (int) ((p->r[1] / syst->box[1] - floor(p->r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
-	idx[2] = (int) ((p->r[2] / syst->box[2] - floor(p->r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
+int cells_fill_and_get_idx_from_particle(System *syst, PatchyParticle *p, int idx[3]) {
+	return cells_fill_and_get_idx_from_vector(syst, p->r, idx);
+}
+
+int cells_fill_and_get_idx_from_vector(System *syst, vector r, int idx[3]) {
+	idx[0] = (int) ((r[0] / syst->box[0] - floor(r[0] / syst->box[0])) * (1. - DBL_EPSILON) * syst->cells->N_side[0]);
+	idx[1] = (int) ((r[1] / syst->box[1] - floor(r[1] / syst->box[1])) * (1. - DBL_EPSILON) * syst->cells->N_side[1]);
+	idx[2] = (int) ((r[2] / syst->box[2] - floor(r[2] / syst->box[2])) * (1. - DBL_EPSILON) * syst->cells->N_side[2]);
 
 	return (idx[0] * syst->cells->N_side[1] + idx[1]) * syst->cells->N_side[2] + idx[2];
 }
@@ -48,7 +53,7 @@ void cells_fill(System *syst) {
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
 
-		int cell_index = cells_fill_and_get_idx(syst, p, ind);
+		int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
 		cells->next[p->index] = cells->heads[cell_index];
 		cells->heads[cell_index] = p;
 		p->cell = cell_index;
