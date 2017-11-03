@@ -446,6 +446,7 @@ void MC_add_remove(System *syst, Output *IO) {
 
 void MC_add_remove_biased(System *syst, Output *IO) {
 	// try to add a particle
+	
 	if(drand48() < 0.5) {
 		if(syst->N == syst->N_max) {
 			if(syst->ensemble == GC) output_exit(IO, "The system contains the maximum number of particles set in the input file (%d), increase GC_N_max\n", syst->N_max);
@@ -473,12 +474,17 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 		double delta_E = energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 		
-		double pa=(acc>1 ? 1 : acc);
+		double pa;
+		if (syst->overlap==1)
+			pa=0;
+		else
+			pa=(acc>1 ? 1 : acc);
 		
 		syst->bsus_collect[3*(syst->N-syst->N_min)+2]+=pa;
 		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
 		
 		double bias=syst->bsus_pm[syst->N-syst->N_min+1]-syst->bsus_pm[syst->N-syst->N_min];
+		
 		
 		if(!syst->overlap && drand48() < exp(-bias)*acc) {	
 			syst->energy += delta_E;
