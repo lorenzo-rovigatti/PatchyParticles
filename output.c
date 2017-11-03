@@ -67,7 +67,7 @@ void output_init(input_file *input, Output *output_files) {
 		output_files->density = fopen(name, mode);
 		if(output_files->density == NULL) output_exit(output_files, "Density file '%s' is not writable\n", name);
 
-		if(ensemble == 3 || ensemble == 6) {
+		if(ensemble == 3 || ensemble == 6 || ensemble == BSUS) {
 			getInputString(input, "Umbrella_sampling_folder", output_files->sus_folder, 1);
 			if(access(output_files->sus_folder, W_OK) != 0) {
 				output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->sus_folder);
@@ -162,6 +162,21 @@ void output_sus(Output *IO, System *syst, llint step) {
 		syst->SUS_hist[i] = 0;
 	}
 
+	fclose(out);
+}
+
+
+void output_bsus(Output *IO, System *syst, llint step) {
+	char name[512];
+	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
+	FILE *out = fopen(name, "w");
+	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
+	
+	int i;
+	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
+		if(syst->bsus_pm[i] > 0) fprintf(out, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+	}
+	
 	fclose(out);
 }
 

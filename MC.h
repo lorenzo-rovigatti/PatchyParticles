@@ -18,8 +18,11 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, matrix orient, 
 int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq);
 
 void MC_add_remove(System *syst, Output *IO);
+void MC_add_remove_biased(System *syst, Output *IO);
 void MC_add_remove_single_cluster(System *syst, Output *IO);
 void MC_move_rototranslate(System *syst, Output *IO);
+
+void bsus_update_histo(System *syst);
 
 void MC_init(input_file *input, System *syst, Output *IO);
 void MC_free(System *syst);

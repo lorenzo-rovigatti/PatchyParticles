@@ -97,6 +97,23 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
 			syst->SUS_hist = calloc(syst->N_max - syst->N_min + 1, sizeof(llint));
 			break;
+		case BSUS:
+			
+			getInputInt(input, "Umbrella_sampling_min", &syst->N_min, 1);
+			getInputInt(input, "Umbrella_sampling_max", &syst->N_max, 1);
+			if(syst->N < syst->N_min) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
+			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			
+			int transition_size=3*(syst->N_max-syst->N_min+1);
+			int histogram_size=syst->N_max-syst->N_min+1;
+			
+			syst->bsus_collect=calloc(transition_size,sizeof(double));
+			syst->bsus_tm=calloc(transition_size,sizeof(double));
+			syst->bsus_normvec=calloc(histogram_size,sizeof(double));
+			syst->bsus_pm=calloc(histogram_size,sizeof(double));
+			
+			break;
+			
 		default:
 			output_exit(output_files, "Unsupported ensemble '%d'\n", syst->ensemble);
 			break;
@@ -172,6 +189,15 @@ void system_free(System *syst) {
 			free(p->patches);
 		}
 	}
+	
 	free(syst->particles);
-	if(syst->ensemble == 3) free(syst->SUS_hist);
+	if(syst->ensemble == SUS) free(syst->SUS_hist);
+	
+	if (syst->ensemble==BSUS)
+	{
+		free(syst->bsus_collect);
+		free(syst->bsus_tm);
+		free(syst->bsus_normvec);
+		free(syst->bsus_pm);
+	}
 }

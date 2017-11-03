@@ -85,6 +85,8 @@ int main(int argc, char *argv[]) {
 				cells_check(&syst, &output_files);
 
 				if(syst.ensemble == SUS) output_sus(&output_files, &syst, curr_step);
+				
+				if(syst.ensemble == BSUS) bsus_update_histo(&syst);
 			}
 		}
 
@@ -96,6 +98,11 @@ int main(int argc, char *argv[]) {
 			sprintf(name, "%s/conf_%lld.rrr", output_files.configuration_folder, curr_step);
 			output_save(&output_files, &syst, curr_step, name);
 			output_save(&output_files, &syst, curr_step, output_files.configuration_last);
+			
+			if(syst.ensemble == BSUS)
+			{
+				output_bsus(&output_files, &syst, curr_step);
+			}
 		}
 
 		/**

@@ -3,6 +3,8 @@ LIBRARY_DIRS =
 STATIC_FLAG = 
 
 OPTIMIZATION_FLAG = -O3 -ffast-math
+#OPTIMIZATION_FLAG = -O0 -ggdb3
+
 ARCH = -DNDEBUG
 
 ifeq ($(dbg), 1)

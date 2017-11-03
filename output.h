@@ -17,6 +17,7 @@ void output_init(input_file *input, Output *output_files);
 void output_free(Output *IO);
 
 void output_sus(Output *IO, System *syst, llint step);
+void output_bsus(Output *IO, System *syst, llint step);
 void output_e_sus(Output *IO, System *syst, llint step);
 void output_save(Output *IO, System *syst, llint step, char *name);
 void output_print(Output *IO, System *syst, llint step);
