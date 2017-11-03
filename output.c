@@ -170,14 +170,20 @@ void output_bsus(Output *IO, System *syst, llint step) {
 	char name[512];
 	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
 	FILE *out = fopen(name, "w");
+	FILE *outlast=fopen("last_bsus.dat","w");
 	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
 	
 	int i;
 	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
-		if(syst->bsus_pm[i] > 0) fprintf(out, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+		if(syst->bsus_pm[i] > 0)
+		{
+			fprintf(out, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+			fprintf(outlast, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+		}
 	}
 	
 	fclose(out);
+	fclose(outlast);
 }
 
 void output_e_sus(Output *IO, System *syst, llint step) {
