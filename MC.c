@@ -465,6 +465,7 @@ void MC_change_volume(System *syst, Output *IO) {
 	if((syst->box[dir] / syst->cells->N_side[dir]) < syst->r_cut) {
 		cells_free(syst->cells);
 		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
 	}
 
 	// rescale particles' positions
