@@ -83,7 +83,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax, syst->kf_delta);
 
-	if(syst->ensemble != NVT) {
+	if(syst->ensemble == SUS || syst->ensemble == GC) {
 		getInputDouble(input, "Activity", &syst->z, 1);
 		switch(syst->ensemble) {
 		case GC:
@@ -104,6 +104,11 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	}
 	else {
 		syst->N_max = syst->N;
+	}
+
+	if(syst->ensemble == NPT) {
+		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
+		getInputDouble(input, "P", &syst->P, 1);
 	}
 
 	syst->V = syst->box[0] * syst->box[1] * syst->box[2];
@@ -157,7 +162,8 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	utils_reset_acceptance_counters(syst);
 
-	cells_init(syst, output_files, 1. + syst->kf_delta);
+	syst->r_cut = 1. + syst->kf_delta;
+	cells_init(syst, output_files, syst->r_cut);
 	cells_fill(syst);
 }
 

@@ -115,8 +115,12 @@ void output_print(Output *IO, System *syst, llint step) {
 	// print acceptances for ensemble moves (on the same line as above)
 	switch (syst->ensemble) {
 	case GC:
+	case SUS:
 		fprintf(IO->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
 		fprintf(IO->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
+		break;
+	case NPT:
+		fprintf(IO->acc, " %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME]);
 		break;
 	default:
 		break;

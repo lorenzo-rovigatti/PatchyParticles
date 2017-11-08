@@ -14,6 +14,4 @@
 void system_init(input_file *input, System *syst, Output *IO);
 void system_free(System *system);
 
-void check_cells(System *syst, Output *IO);
-
 #endif /* SYSTEM_H_ */
