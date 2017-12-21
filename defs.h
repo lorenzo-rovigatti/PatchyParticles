@@ -54,10 +54,12 @@ typedef struct Output {
 	llint start_from;
 	llint save_every;
 	llint print_every;
+	int print_bonds;
 	int restart_step_counter;
 	char configuration_folder[512];
 	char configuration_last[512];
 	char sus_folder[512];
+	char bonds_folder[512];
 	FILE *log;
 	FILE *energy;
 	FILE *density;
@@ -73,8 +75,9 @@ typedef struct System {
 	double energy;
 	int n_patches;
 
-	// this matrix allows base_patches[0] to be transformed
-	// to 0, 0, 1
+	/**
+	 * This matrix is initialised so as to transform base_patches[0] to the 0, 0, 1 vector
+	 */
 	matrix base_orient;
 	vector *base_patches;
 

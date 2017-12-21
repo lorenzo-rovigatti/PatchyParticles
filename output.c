@@ -6,6 +6,8 @@
  */
 
 #include "output.h"
+
+#include "MC.h"
 #include "utils.h"
 
 #include <unistd.h>
@@ -67,7 +69,7 @@ void output_init(input_file *input, Output *output_files) {
 		output_files->density = fopen(name, mode);
 		if(output_files->density == NULL) output_exit(output_files, "Density file '%s' is not writable\n", name);
 
-		if(ensemble == 3 || ensemble == 6) {
+		if(ensemble == SUS) {
 			getInputString(input, "Umbrella_sampling_folder", output_files->sus_folder, 1);
 			if(access(output_files->sus_folder, W_OK) != 0) {
 				output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->sus_folder);
@@ -75,67 +77,161 @@ void output_init(input_file *input, Output *output_files) {
 		}
 	}
 	else output_files->density = NULL;
+
+	output_files->print_bonds = 0;
+	getInputInt(input, "Print_bonds", &output_files->print_bonds, 0);
+	if(output_files->print_bonds) {
+		if(ensemble != NVT) {
+			output_exit(output_files, "The printing of bonds is unavailable in non-canonical ensembles");
+		}
+
+		getInputString(input, "Bonds_folder", output_files->bonds_folder, 1);
+		if(access(output_files->bonds_folder, W_OK) != 0) {
+			output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->bonds_folder);
+		}
+	}
 }
 
-void output_free(Output *IO) {
-	fclose(IO->energy);
-	fclose(IO->acc);
-	if(IO->log != stderr) fclose(IO->log);
-	if(IO->density != NULL) fclose(IO->density);
+void output_free(Output *output_files) {
+	fclose(output_files->energy);
+	fclose(output_files->acc);
+	if(output_files->log != stderr) fclose(output_files->log);
+	if(output_files->density != NULL) fclose(output_files->density);
 }
 
-void output_print(Output *IO, System *syst, llint step) {
+void output_print(Output *output_files, System *syst, llint step) {
+	/**
+	 * Print the energy
+	 */
 	double E = (syst->N > 0) ? syst->energy / syst->N : 0;
+	fprintf(output_files->energy, "%lld %lf\n", step, E);
+	fflush(output_files->energy);
 
-	fprintf(IO->energy, "%lld %lf\n", step, E);
-	fflush(IO->energy);
-
+	/**
+	 * Print the density, if we are simulating in a non-canonical ensemble
+	 */
 	if(syst->ensemble != 0) {
-		fprintf(IO->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
-		fflush(IO->density);
+		fprintf(output_files->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
+		fflush(output_files->density);
 	}
 	
-	// print acceptances for dynamics
-	fprintf(IO->acc, "%lld", step);
+	/**
+	 * Print acceptances for the different moves, according to the chosen dynamics
+	 */
+	fprintf(output_files->acc, "%lld", step);
 	switch (syst->dynamics) {
 	case RTMC:
-		fprintf(IO->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
+		fprintf(output_files->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
 		break;
 	case VMMC:
-		fprintf(IO->acc, " %e", syst->accepted[MOVE_VMMC] / (double) syst->tries[MOVE_VMMC]);
+		fprintf(output_files->acc, " %e", syst->accepted[MOVE_VMMC] / (double) syst->tries[MOVE_VMMC]);
 		break;
 	case AVBMC:
-		fprintf(IO->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
-		fprintf(IO->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
+		fprintf(output_files->acc, " %e", syst->accepted[ROTO_TRASL] / (double) syst->tries[ROTO_TRASL]);
+		fprintf(output_files->acc, " %e", syst->accepted[AVB] / (double) syst->tries[AVB]);
 		break;
 	default:
 		break;
 	}
 	
-	// print acceptances for ensemble moves (on the same line as above)
+	/**
+	 * Print acceptances for ensemble moves (on the same line as above)
+	 */
 	switch (syst->ensemble) {
 	case GC:
-		fprintf(IO->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
-		fprintf(IO->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
+		fprintf(output_files->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
+		fprintf(output_files->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
 		break;
 	default:
 		break;
 	}
 	
-	fprintf(IO->acc, "\n");
-	fflush(IO->acc);
+	fprintf(output_files->acc, "\n");
+	fflush(output_files->acc);
 	utils_reset_acceptance_counters(syst);
 
+	/**
+	 * Print energy and (if necessary) density to the standard output
+	 */
 	printf("%lld %lf %lf", step, E, syst->energy);
 	if(syst->ensemble != 0) printf(" %lf", syst->N / syst->V);
 	printf("\n");
 
-	output_save(IO, syst, step, IO->configuration_last);
+	/**
+	 * Print the current configuration
+	 */
+	output_save(output_files, syst, step, output_files->configuration_last);
+
+	/**
+	 * Print the bond file, if requested by the user
+	 */
+	if(output_files->print_bonds) {
+		char name[1024];
+		sprintf(name, "%s/bonds_%lld.dat", output_files->bonds_folder, step);
+		output_print_bonds(output_files, syst, name);
+	}
 }
 
-void output_save(Output *IO, System *syst, llint step, char *name) {
+void output_print_bonds(Output *output_files, System *syst, char *name) {
 	FILE *out = fopen(name, "w");
-	if(out == NULL) output_exit(IO, "File '%s' is not writable\n", name);
+
+	/**
+	 * The first line of the file contains the number of particles
+	 */
+	fprintf(out, "%d\n", syst->N);
+
+	int p_idx;
+	int ind[3], loop_ind[3];
+	for(p_idx = 0; p_idx < syst->N; p_idx++) {
+		PatchyParticle *p = syst->particles + p_idx;
+		int p_n_bonds = 0;
+		char bond_line[512] = "";
+
+		cells_fill_and_get_idx_from_particle(syst, p, ind);
+
+		int j, k, l, p_patch, q_patch;
+		for(j = -1; j < 2; j++) {
+			loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
+			for(k = -1; k < 2; k++) {
+				loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
+				for(l = -1; l < 2; l++) {
+					loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+					int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
+
+					PatchyParticle *q = syst->cells->heads[loop_index];
+					while(q != NULL) {
+						if(q->index != p->index) {
+							int val = MC_interact(syst, p, q, &p_patch, &q_patch);
+
+							/**
+							 * If p and q are bonded, we increase p's bonding counter and update the string containing the indexes
+							 * of the particles p is bonded with
+							 */
+							if(val == PATCH_BOND) {
+								p_n_bonds++;
+								sprintf(bond_line, "%s%d ", bond_line, q->index);
+							}
+						}
+						q = syst->cells->next[q->index];
+					}
+				}
+			}
+		}
+
+		/**
+		 * Print two lines per particle. The first one contains p's index and the number of its bonded neighbours
+		 * The second one is just the list of p's bonded neighbours. It might be empty
+		 */
+		fprintf(out, "%d %d\n", p->index, p_n_bonds);
+		fprintf(out, "%s\n", bond_line);
+	}
+
+	fclose(out);
+}
+
+void output_save(Output *output_files, System *syst, llint step, char *name) {
+	FILE *out = fopen(name, "w");
+	if(out == NULL) output_exit(output_files, "File '%s' is not writable\n", name);
 
 	fprintf(out, "%lld %d %lf %lf %lf\n", step, syst->N, syst->box[0], syst->box[1], syst->box[2]);
 
@@ -150,11 +246,11 @@ void output_save(Output *IO, System *syst, llint step, char *name) {
 	fclose(out);
 }
 
-void output_sus(Output *IO, System *syst, llint step) {
+void output_sus(Output *output_files, System *syst, llint step) {
 	char name[512];
-	sprintf(name, "%s/sus-%lld.dat", IO->sus_folder, step);
+	sprintf(name, "%s/sus-%lld.dat", output_files->sus_folder, step);
 	FILE *out = fopen(name, "w");
-	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
+	if(out == NULL) output_exit(output_files, "SUS file '%s' is not writable\n", name);
 
 	int i;
 	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
@@ -165,29 +261,11 @@ void output_sus(Output *IO, System *syst, llint step) {
 	fclose(out);
 }
 
-void output_e_sus(Output *IO, System *syst, llint step) {
-	char name[512];
-	sprintf(name, "%s/sus-%lld.dat", IO->sus_folder, step);
-	FILE *out = fopen(name, "w");
-	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
-
-	int i, j;
-	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
-		for(j = 0; j < syst->SUS_e_bins; j++) {
-			llint c = syst->SUS_e_hist[i][j];
-			if(c > 0) fprintf(out, "%d %d %lld\n", i + syst->N_min, j, c);
-			syst->SUS_e_hist[i][j] = 0;
-		}
-	}
-
-	fclose(out);
-}
-
-void output_log_msg(Output *IO, char *format, ...) {
+void output_log_msg(Output *output_files, char *format, ...) {
 	va_list args;
-	if(IO->log != stderr) {
+	if(output_files->log != stderr) {
 		va_start(args, format);
-		vfprintf(IO->log, format, args);
+		vfprintf(output_files->log, format, args);
 		va_end(args);
 	}
 
@@ -195,14 +273,14 @@ void output_log_msg(Output *IO, char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 
-	fflush(IO->log);
+	fflush(output_files->log);
 }
 
-void output_exit(Output *IO, char *format, ...) {
+void output_exit(Output *output_files, char *format, ...) {
 	va_list args;
-	if(IO->log != stderr) {
+	if(output_files->log != stderr) {
 		va_start(args, format);
-		vfprintf(IO->log, format, args);
+		vfprintf(output_files->log, format, args);
 		va_end(args);
 	}
 
@@ -210,7 +288,7 @@ void output_exit(Output *IO, char *format, ...) {
 	vfprintf(stderr, format, args);
 	va_end(args);
 
-	fflush(IO->log);
+	fflush(output_files->log);
 	exit(1);
 }
 

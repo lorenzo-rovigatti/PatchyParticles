@@ -14,46 +14,11 @@
 #include <float.h>
 #include <math.h>
 
-// TODO: to be removed
-void _do_widom(System *syst) {
-	double widom = 0.;
-	int n_widom = 0;
-	PatchyParticle p;
-	p.index = 100000;
-	p.patches = malloc(sizeof(vector) * syst->n_patches);
-	int i;
-	for(i = 0; i < 1000000; i++) {
-		p.r[0] = drand48() * syst->box[0];
-		p.r[1] = drand48() * syst->box[1];
-		p.r[2] = drand48() * syst->box[2];
-
-		random_orientation(syst, p.orientation);
-
-		int j;
-		for(j = 0; j < syst->n_patches; j++) {
-			MATRIX_VECTOR_MULTIPLICATION(p.orientation, syst->base_patches[j], p.patches[j]);
-		}
-
-		double E = energy(syst, &p);
-		if(!syst->overlap) {
-			widom += exp(-E / syst->T);
-		}
-		n_widom++;
-	}
-	widom /= n_widom;
-	FILE *out = fopen("widom.dat", "a");
-	fprintf(out, "%lf %lf\n", syst->N / syst->V / widom, 1. / widom);
-	fclose(out);
-	free(p.patches);
-}
-
 void do_NVT(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N; i++) {
 		syst->do_dynamics(syst, output_files);
 	}
-
-//	if(drand48() < 0.001) _do_widom(syst);
 }
 
 void do_GC(System *syst, Output *output_files) {
@@ -64,8 +29,6 @@ void do_GC(System *syst, Output *output_files) {
 		}
 		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
 	}
-
-//	if(drand48() < 0.001) _do_widom(syst);
 }
 
 void do_SUS(System *syst, Output *output_files) {
