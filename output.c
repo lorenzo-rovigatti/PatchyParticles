@@ -7,9 +7,12 @@
 
 #include "output.h"
 
+#include "defs.h"
 #include "MC.h"
+#include "parse_input.h"
 #include "utils.h"
 
+#include <stdlib.h>
 #include <unistd.h>
 
 void output_init(input_file *input, Output *output_files) {

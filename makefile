@@ -20,11 +20,8 @@ endif
 # ----- COMPILER -----#
 CC = gcc -Wall -Wshadow
 
-# --- PREPROCESSOR FLAGS --- #
-CPPFLAGS = $(INCLUDE_DIRS)
-
 # -- CC FLAGS   ------#
-CFLAGS = $(OPTIMIZATION_FLAG) $(ARCH) $(DEF)
+CFLAGS = $(OPTIMIZATION_FLAG) $(ARCH) $(DEF) $(INCLUDE_DIRS)
 
 # --- LINKER FLAGS  -------#
 LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
@@ -48,9 +45,18 @@ PatchyParticles: main.o $(OBJ)
 	$(CC) main.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE)
 
 # -------- SUFFIX RULES ------#
-%.o: %.c defs.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+	
+## --- Add dependencies by hand to make the Makefile as generic as possible --- #
+avb.o: avb.h MC.h defs.h output.h parse_input.h system.h utils.h
+cells.o: cells.h defs.h output.h
+generator.o: defs.h output.h utils.h
+main.o: defs.h MC.h output.h parse_input.h system.h utils.h
+MC.o: avb.h defs.h MC.h output.h utils.h vmmc.h 
+output.o: defs.h output.h MC.h parse_input.h utils.h
+utils.o: defs.h
+vmmc.o: defs.h MC.h defs.h output.h parse_input.h system.h utils.h
 
 clean:
 	rm -f $(EXE) $(OBJ) main.o generator generator.o

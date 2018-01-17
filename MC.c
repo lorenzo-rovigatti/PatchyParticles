@@ -6,13 +6,15 @@
  */
 
 #include "avb.h"
-#include "vmmc.h"
 #include "MC.h"
-#include "utils.h"
 #include "output.h"
+#include "utils.h"
+#include "vmmc.h"
 
 #include <float.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 void do_NVT(System *syst, Output *output_files) {
 	int i;

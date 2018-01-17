@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "output.h"
 #include "utils.h"
 
 #include <stdio.h>

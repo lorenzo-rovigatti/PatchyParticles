@@ -6,9 +6,10 @@
  */
 
 #include "utils.h"
-#include "output.h"
 
+#include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 void set_vector(vector v, double x, double y, double z) {
 	v[0] = x;

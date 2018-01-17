@@ -19,7 +19,7 @@
 
 typedef char input_string[OPT_MAX_LENGTH];
 
-typedef struct {
+typedef struct input_file {
 	int state;
 	int N_opts;
 	int N_alloc;

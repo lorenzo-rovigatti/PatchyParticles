@@ -1,5 +1,10 @@
 #include "vmmc.h"
+
+#include "defs.h"
 #include "MC.h"
+#include "output.h"
+#include "parse_input.h"
+#include "system.h"
 #include "utils.h"
 
 #include <math.h>

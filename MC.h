@@ -9,7 +9,8 @@
 #define MC_H_
 
 #include "defs.h"
-#include "parse_input.h"
+
+typedef struct input_file input_file;
 
 void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);
 void rollback_particle(System *syst, PatchyParticle *p);

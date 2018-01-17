@@ -1,12 +1,12 @@
 #ifndef VMMC_H_
 #define VMMC_H_
 
-#include "parse_input.h"
-#include "system.h"
-#include "output.h"
-
 #define VMMC_ROTATION (1)
 #define VMMC_TRANSLATION (2)
+
+#include "defs.h"
+
+typedef struct input_file input_file;
 
 typedef struct vmmc_d {
 	double max_move;

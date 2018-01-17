@@ -38,6 +38,7 @@
 typedef double vector[3];
 typedef double matrix[3][3];
 typedef long long int llint;
+typedef struct Output Output;
 
 typedef struct PatchyParticle {
 	vector r, r_old;
@@ -49,22 +50,6 @@ typedef struct PatchyParticle {
 
 	int cell, cell_old;
 } PatchyParticle;
-
-typedef struct Output {
-	llint start_from;
-	llint save_every;
-	llint print_every;
-	int print_bonds;
-	int restart_step_counter;
-	char configuration_folder[512];
-	char configuration_last[512];
-	char sus_folder[512];
-	char bonds_folder[512];
-	FILE *log;
-	FILE *energy;
-	FILE *density;
-	FILE *acc;
-} Output;
 
 typedef struct System {
 	int N, N_min, N_max;

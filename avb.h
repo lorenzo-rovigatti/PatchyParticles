@@ -1,9 +1,10 @@
 #ifndef AVB_H_
 #define AVB_H_
 
-#include "parse_input.h"
-#include "system.h"
-#include "output.h"
+typedef struct Output Output;
+typedef struct System System;
+typedef struct PatchyParticle PatchyParticle;
+typedef struct input_file input_file;
 
 typedef struct _avbmc {
 	PatchyParticle **neighbours;
