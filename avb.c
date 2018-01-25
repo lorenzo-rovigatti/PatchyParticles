@@ -24,6 +24,9 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 
 	avbdata->avb_vout = syst->V - avbdata->avb_vin;
 	avbdata->avb_p = 0.5;
+	/**
+	 * the probability with which avb moves are attempted. The probability of regular rototranslations is just 1 - avb_p.
+	 */
 	getInputDouble(input, "avb_p", &avbdata->avb_p, 0);
 }
 
@@ -72,21 +75,19 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 		syst->tries[AVB]++;
 
 		PatchyParticle *receiver = syst->particles + (int) (drand48() * syst->N);
-
-		int i;
-
-		PatchyParticle *p;
-
 		_set_neighbours(syst, receiver);
 
-		// bring in
+		int i;
+		PatchyParticle *p;
+
+		// the move will attempt to bring p inside the bonding volume of receiver
 		if(drand48() > 0.5) {
-			// if all the particles but rec are in rec's bonding volume then no move is possible
+			// if all the particles but receiver are in receiver's bonding volume then no move is possible
 			if(avbdata->num_neighbours == (syst->N - 1)) return;
 
 			int found = 0;
 
-			// select a particle which is not in rec's bonding volume
+			// select a particle which is not in receiver's bonding volume
 			do {
 				p = syst->particles + (int) (drand48() * syst->N);
 				found = 1;
@@ -96,16 +97,16 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 			vector new_r;
 			matrix new_orient;
-			// target patch
+			// choose a target patch
 			int target_patch = (int) (drand48() * p->n_patches);
 
 			place_inside_vbonding(syst, receiver, new_r, new_orient, target_patch);
 
 			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
 
-			double deltaE = -energy(syst, p);
-			rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += energy(syst, p);
+			double deltaE = -MC_energy(syst, p);
+			MC_rototraslate_particle(syst, p, disp, new_orient);
+			deltaE += MC_energy(syst, p);
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
@@ -119,15 +120,15 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 				syst->energy += deltaE;
 			}
 			else {
-				rollback_particle(syst, p);
+				MC_rollback_particle(syst, p);
 			}
 		}
-		// take out
+		// the move will try to take p out out of the bonding volume of receiver
 		else {
-			// we need rec to have neighbors in order to take one of them out...
+			// we need receiver to have a non-zero number of neighbors in order to take one of them out...
 			if(avbdata->num_neighbours == 0) return;
 
-			// pick a random particle from rec's neighbors
+			// pick a random particle from receiver's neighbors
 			int random_neighbour = (int) (drand48() * avbdata->num_neighbours);
 
 			int cn = 0;
@@ -148,30 +149,31 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 			matrix new_orient;
 			vector new_patches[syst->n_patches];
 			int buff;
+			// choose a random position and a random orientation so that, at the end of the move, p and receiver won't be bonded any more
 			do {
 				new_r[0] = drand48() * syst->box[0];
 				new_r[1] = drand48() * syst->box[1];
 				new_r[2] = drand48() * syst->box[2];
 				random_orientation(syst, new_orient);
-				for(i = 0; i < syst->n_patches; i++)
+				for(i = 0; i < syst->n_patches; i++) {
 					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_patches[i]);
+				}
 			} while(MC_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
 
 			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
 
-			double deltaE = -energy(syst, p);
-			rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += energy(syst, p);
+			double deltaE = -MC_energy(syst, p);
+			MC_rototraslate_particle(syst, p, disp, new_orient);
+			deltaE += MC_energy(syst, p);
 
 			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * avbdata->avb_vout / ((syst->N - avbdata->num_neighbours) * avbdata->avb_vin);
-
 			if(!syst->overlap && drand48() < acc) {
 				syst->accepted[AVB]++;
 				syst->energy += deltaE;
 
 			}
 			else {
-				rollback_particle(syst, p);
+				MC_rollback_particle(syst, p);
 			}
 		}
 	}

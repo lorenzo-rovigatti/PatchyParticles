@@ -45,6 +45,10 @@ void do_SUS(System *syst, Output *output_files) {
 }
 
 void MC_init(input_file *input, System *syst, Output *IO) {
+	/**
+	 * Here we set the pointer to the function that will be used to make a Monte Carlo step
+	 * according to the ensemble specified in the input file
+	 */
 	switch(syst->ensemble) {
 	case NVT:
 		syst->do_ensemble = &do_NVT;
@@ -60,6 +64,10 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		break;
 	}
 
+	/**
+	 * Here we set the pointer to the function that will be used to perform the type of dynamics
+	 * specified in the input file
+	 */
 	switch(syst->dynamics) {
 	case RTMC:
 		syst->do_dynamics = &MC_move_rototranslate;
@@ -86,12 +94,12 @@ void MC_free(System *syst) {
 		VMMC_free();
 		break;
 	case AVBMC:
-		AVBMC_free(syst);
+		AVBMC_free();
 		break;
 	}
 }
 
-void rollback_particle(System *syst, PatchyParticle *p) {
+void MC_rollback_particle(System *syst, PatchyParticle *p) {
 	p->r[0] = p->r_old[0];
 	p->r[1] = p->r_old[1];
 	p->r[2] = p->r_old[2];
@@ -105,7 +113,7 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 	}
 
 	Cells *cells = syst->cells;
-	// bring back the particle in the old cell
+	// bring the particle back in the old cell
 	if(p->cell != p->cell_old) {
 		if(cells->heads[p->cell]->index == p->index) cells->heads[p->cell] = cells->next[p->index];
 		else {
@@ -125,7 +133,7 @@ void rollback_particle(System *syst, PatchyParticle *p) {
 	}
 }
 
-void change_cell(System *syst, PatchyParticle *p) {
+void MC_change_cell(System *syst, PatchyParticle *p) {
 	int ind[3];
 	int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
 	if(cell_index == p->cell) {
@@ -153,7 +161,7 @@ void change_cell(System *syst, PatchyParticle *p) {
 	p->cell = cell_index;
 }
 
-void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient) {
+void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient) {
 	p->r_old[0] = p->r[0];
 	p->r_old[1] = p->r[1];
 	p->r_old[2] = p->r[2];
@@ -174,7 +182,7 @@ void rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector 
 		MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 	}
 
-	change_cell(syst, p);
+	MC_change_cell(syst, p);
 }
 
 int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches, int *onp, int *onq) {
@@ -217,7 +225,7 @@ inline int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *
 	return MC_would_interact(syst, p, q->r, q->patches, onp, onq);
 }
 
-double energy(System *syst, PatchyParticle *p) {
+double MC_energy(System *syst, PatchyParticle *p) {
 	syst->overlap = 0;
 	double E = 0.;
 
@@ -273,16 +281,16 @@ void MC_move_rototranslate(System *syst, Output *IO) {
 	utils_rotate_matrix(p->orientation, new_orient, axis, theta);
 
 	// apply changes to p
-	double deltaE = -energy(syst, p);
-	rototraslate_particle(syst, p, disp, new_orient);
-	deltaE += energy(syst, p);
+	double deltaE = -MC_energy(syst, p);
+	MC_rototraslate_particle(syst, p, disp, new_orient);
+	deltaE += MC_energy(syst, p);
 
 	if(!syst->overlap && (deltaE < 0. || drand48() < exp(-deltaE / syst->T))) {
 		syst->energy += deltaE;
 		syst->accepted[type]++;
 	}
 	else {
-		rollback_particle(syst, p);
+		MC_rollback_particle(syst, p);
 		syst->overlap = 0;
 	}
 }
@@ -310,7 +318,7 @@ void MC_add_remove(System *syst, Output *IO) {
 			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 		}
 
-		double delta_E = energy(syst, p);
+		double delta_E = MC_energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 
 		if(!syst->overlap && drand48() < acc) {
@@ -337,7 +345,7 @@ void MC_add_remove(System *syst, Output *IO) {
 
 		PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
 
-		double delta_E = -energy(syst, p);
+		double delta_E = -MC_energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
 		if(drand48() < acc) {
 			syst->energy += delta_E;
@@ -395,13 +403,13 @@ void MC_add_remove(System *syst, Output *IO) {
 	}
 }
 
-void check_energy(System *syst, Output *IO) {
+void MC_check_energy(System *syst, Output *IO) {
 	int i;
 	double E = 0.;
 	syst->overlap = 0;
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
-		E += energy(syst, p);
+		E += MC_energy(syst, p);
 		gram_schmidt(p->orientation[0], p->orientation[1], p->orientation[2]);
 	}
 	E *= 0.5;

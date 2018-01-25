@@ -1,0 +1,30 @@
+Dynamics = 1
+Ensemble = 0
+Seed = 40912329
+
+# if a vmmc move attempts to move a particle for more than this value, the move will be rejected
+vmmc_max_move = 5.
+# if a vmmc move attempts to move more than this number of particles, the move will be rejected
+vmmc_max_cluster = 50
+
+Temperature = 0.2
+Activity = 0.2
+
+Disp_max = 0.1
+Theta_max = 0.1
+
+Steps = 5000000
+Print_every = 1000
+Save_every = 10000
+
+GC_N_max = 1500
+
+Density_file = density.dat
+Energy_file = energy.dat
+Configuration_folder = confs
+Configuration_last = last.rrr
+
+Initial_conditions_file = init.rrr
+
+KF_delta = 0.119
+KF_cosmax = 0.92

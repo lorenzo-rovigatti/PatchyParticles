@@ -15,7 +15,13 @@ vmmc_d *vmmcdata;
 void VMMC_init(input_file *input, System *syst, Output *IO) {
 	vmmcdata = malloc(sizeof(vmmc_d));
 
+	/**
+	 * if a vmmc move attempts to move a particle for more than this value, the move will be rejected
+	 */
 	getInputDouble(input, "vmmc_max_move", &vmmcdata->max_move, 1);
+	/**
+	 * if a vmmc move attempts to move more than this number of particles, the move will be rejected
+	 */
 	getInputInt(input, "vmmc_max_cluster", &vmmcdata->max_cluster, 1);
 
 	vmmcdata->n_possible_links = 0;
@@ -242,7 +248,6 @@ void VMMC_dynamics(System *syst, Output *output_files) {
 	_restore_dof(seedp);
 
 	// TODO: possibly do single particle move if seed particle has no neighbours
-
 	while(vmmcdata->n_possible_links > 0 && vmmcdata->n_clust < vmmcdata->max_cluster) {
 		// extract link at random from list
 		int link_index = (int) (drand48() * vmmcdata->n_possible_links);
@@ -348,7 +353,7 @@ void VMMC_dynamics(System *syst, Output *output_files) {
 		vector old_pos = { p->r[0], p->r[1], p->r[2] };
 		_store_dof(p);
 		_move_particle(syst, p, move, angle);
-		change_cell(syst, p);
+		MC_change_cell(syst, p);
 		vector dist = { old_pos[0] - p->r[0], old_pos[1] - p->r[1], old_pos[2] - p->r[2] };
 		double dist2 = SCALAR(dist, dist);
 		if(dist2 > vmmcdata->max_move * vmmcdata->max_move) {
@@ -377,7 +382,7 @@ void VMMC_dynamics(System *syst, Output *output_files) {
 	// and we fix the values of the is_in_cluster array
 	for(i = 0; i < vmmcdata->n_clust; i++) {
 		PatchyParticle *p = vmmcdata->clust[i];
-		change_cell(syst, p);
+		MC_change_cell(syst, p);
 		//vmmcdata->is_in_cluster[p->index] = 0;
 	}
 

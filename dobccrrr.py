@@ -44,7 +44,7 @@ Lz = nz * a
 
 toremove = len(rmol) - real_N
 
-## mettiamo le patch
+## patch initialisation
 f = 1.0 / np.sqrt(3.)
 base_patches = []
 base_patches.append(np.array([-f, -f, +f]))
@@ -69,21 +69,6 @@ Rs.append ([
     np.array([ st,  ct, 0.]),
     np.array([ 0.,  0., 1.])
     ])
-
-'''
-# print mgl to stdout, for debugging purposes
-print ".Box:%g,%g,%g" % (Lx, Ly, Lz)
-pind = 0
-for i, r in enumerate(rmol):
-    if i < toremove:
-        pind += 1
-        continue
-    print r[0], r[1], r[2], "@ 0.5 C[red]"
-    for k in range(4):
-        rp = r + 0.5 * np.dot(Rs[pind%2], base_patches[k])
-        print rp[0], rp[1], rp[2], "@ 0.1 C[blue]"
-    pind += 1
-'''
 
 print >> sys.stderr, "(stderr) Generating BCC with N =", len(rmol) - toremove, "V =", Lx*Ly*Lz, "Box=", Lx, Ly, Lz
 print >> sys.stderr, "(stderr) density of the crystal part", target_rho
