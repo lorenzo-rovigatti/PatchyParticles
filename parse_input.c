@@ -57,6 +57,7 @@ void loadInput(input_file *inp, FILE * inp_file) {
 			if(delim == NULL) {
 				fprintf(stderr, "WARNING: malformed line '%s'\n", option);
 				free(option);
+				option = NULL;
 				continue;
 			}
 			*delim = '\0';
@@ -74,8 +75,6 @@ void loadInput(input_file *inp, FILE * inp_file) {
 			// split the option in key and value and trim them both
 			getTrimmedString(t_option, inp->keys[inp->N_opts]);
 			getTrimmedString(delim+1, inp->values[inp->N_opts]);
-
-//			printf("%d %s %s\n", ret, inp->keys[inp->N_opts], inp->values[inp->N_opts]);
 
 			inp->N_opts++;
 		}
