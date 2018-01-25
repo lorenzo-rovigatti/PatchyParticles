@@ -9,20 +9,27 @@ be read as much as meant to be used.
 ## Compilation
 
 `PatchyParticles` does not require any dependencies but a C compiler, the standard C 
-library and `make`. The default compiler, specified in the `makefile` file, is gcc. 
+library and GNU's `make`. The default compiler, specified in the `makefile` file, is 
+gcc, but the code can be compiled with icc as well. The compilation has been tested 
+with gcc >= 4.8 and icc >= 13.
 In order to compile the code it is sufficient to launch make within the main folder: 
 
 	$ make 
-	
+
 Depending on the platform, it might be necessary to explicitly pass the makefile to
 `make`. This can be done by issuing
 
 	$ make -f makefile
+
+The code can be compiled with icc with the command 
+
+	$ make -f makefile.icc
 	
 The default behaviour is to compile `PatchyParticles` with full optimisations enabled
-(that is, with the gcc options `-O3 -ffast-math -DNDEBUG`). The code can also be 
-compiled with optimisations and the debug flags `-g2 -pg -ggdb3` (`make g=1`) or
-with debug flags only (`make dbg=1`).  
+(that is, with the options `-O3 -ffast-math -DNDEBUG` or `-O3 -fast -DNDEBUG` if the 
+code is compiled with gcc or icc, respectively)). The code can also be compiled with 
+optimisations and the debug flags `-g2 -pg -ggdb3` (`make g=1`) or with debug flags only 
+(`make dbg=1`).
 
 At the end of the compilation stage, two executables will be generated: `PatchyParticles`
 and `generator`.
