@@ -92,8 +92,12 @@ int main(int argc, char *argv[]) {
 	System new_syst;
 	new_syst.N = new_syst.N_max = atoi(argv[1]);
 	double density = atof(argv[2]);
+	/**
+	 * It is very hard to generate very dense configurations by just randomly inserting particles. Here we
+	 * set a hard maximum (rho = 0.7) above which the code will cowardly refuse to even try.
+	 */
 	if(density > 0.7) {
-		fprintf(stderr, "This simple generator cannot produce configurations with density higher than 0.7\n");
+		fprintf(stderr, "It is very hard to generate very dense configurations by just randomly inserting particles. This simple generator cannot produce configurations with density higher than 0.7\n");
 		exit(1);
 	}
 	new_syst.box[0] = pow(new_syst.N/density, 1./3.);

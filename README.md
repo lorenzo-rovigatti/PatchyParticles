@@ -38,11 +38,52 @@ and `generator`.
 
 The `PatchyParticles` program takes one mandatory argument, the input file. The syntax 
 of the file is quite simple, as it is just a list of "key = value" lines. The Examples 
-folder contains a simple input file with all the mandatory options.
+folder contains some simple input files with all the mandatory options.
 
 The `generator` binary can be used to generate initial configurations of N particles 
 at density ρ, with ρ < 0.7. It requires two arguments (an integer for N and a decimal
 number for ρ). The program prints the configuration in a new file named `generated.rrr`.
+
+## Input file
+
+Here is a list of mandatory options. Please refer to the input files in the `Examples` 
+folder for common values. 
+
+### Simulation options
+
+* `Dynamics = <int>`: use 0 for rototranslations, 1 for AVB and 2 for VMMC.
+* `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive 
+Umbrella Sampling.
+* `Temperature = <float>`: temperature of the simulation, in units of the patch-patch 
+bond.
+* `Steps = <int>`: length of the simulation, in Monte Carlo steps.
+* `GC_N_max = <int>`: maximum number of particles, above which the simulation will be 
+stopped. Meaningful only for Grand Canonical (or SUS) simulations
+
+### Input/output options
+
+* `Initial_conditions_file`: initial configuration.
+* `Print_every = <int>`: output frequency for energy, density and acceptances.
+* `Save_every = <int>`: output frequency for configurations.
+* `Energy_file = <string>`: name of the output file for the energy. 
+* `Density_file = <string>`: name of the output file for the density.
+* `Configuration_last = <string>`: name of the file which stores the last configuration 
+(printed with frequency `Save_every` and at the end of the simulation)
+* `Confguration_folder`: name of the folder which will contain the configuration files
+
+### Kern-Frenkel options
+
+* `KF_delta = <float>`: Radial width of the Kern-Frenkel patches.
+* `KF_cosmax = <float>`: Angular width of the Kern-Frenkel patches.
+
+### Monte Carlo moves options
+
+* `Disp_max = <float>`: maximum trial displacement for translations.
+* `Theta_max = <float>`: maximum trial angular displacement for rotations, in radians.
+* `vmmc_max_move = <float>`: maximum allowed displacement for VMMC moves: if a vmmc move 
+attempts to move a particle for more than this value, the move will be rejected.
+* `vmmc_max_cluster = <int>`: maximum cluster size for VMMC moves: if a vmmc move attempts 
+to move more than this number of particles, the move will be rejected.
 
 ## Code organisation
 
