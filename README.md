@@ -1,6 +1,6 @@
 # PatchyParticles
 
-`PatchyParticles` is a code for perfoming Monte Carlo simulations of hard particles decorated with four patches modelled through the [Kern-Frenkel](http://www.sklogwiki.org/SklogWiki/index.php/Kern_and_Frenkel_patchy_model) pair interaction potential. The code is _educational_ in the sense that it is meant to be read as much as meant to be used.  
+`PatchyParticles` is a code for perfoming Monte Carlo simulations of hard particles decorated with four patches modelled through the [Kern-Frenkel](http://www.sklogwiki.org/SklogWiki/index.php/Kern_and_Frenkel_patchy_model) pair interaction potential. The code is *educational* in the sense that it is meant to be read as much as meant to be used.  
 
 ## Compilation
 
@@ -18,7 +18,7 @@ The code can be compiled with icc with the command
 
 	$ make -f makefile.icc
 	
-The default behaviour is to compile `PatchyParticles` with full optimisations enabled (that is, with the options `-O3 -ffast-math -DNDEBUG` or `-O3 -fast -DNDEBUG` if the code is compiled with gcc or icc, respectively)). The code can also be compiled with optimisations and the debug flags `-g2 -pg -ggdb3` (`make g=1`) or with debug flags only (`make dbg=1`).
+The default behaviour is to compile `PatchyParticles` with full optimisations enabled (that is, with the options `-O3 -ffast-math -DNDEBUG` or `-fast -DNDEBUG` if the code is compiled with gcc or icc, respectively)). The code can also be compiled with optimisations and debug flags (`make g=1`) or with debug flags only (`make dbg=1`).
 
 At the end of the compilation stage there will be two executables: `PatchyParticles` and `generator`.
 
@@ -65,6 +65,30 @@ stopped. Meaningful only for Grand Canonical (or SUS) simulations
 * `vmmc_max_move = <float>`: maximum allowed displacement for VMMC moves: if a vmmc move attempts to move a particle for more than this value, the move will be rejected.
 * `vmmc_max_cluster = <int>`: maximum cluster size for VMMC moves: if a vmmc move attempts to move more than this number of particles, the move will be rejected.
 
+### Some useful non-mandatory options
+
+* `Restart_step_counter = <int>`: true by default, if set to false will restart the simulation from the time step found in the initial configuration file and append the energy, density and acceptance output to their respective files.
+* `Log_file = <string>`: by default PatchyParticles writes the output to the standard error. If the input file contains this option, PatchyParticles will redirect its output to the specified file.
+* `Acceptance_file = <string>`: by default acceptance probabilities are written to the `acceptance.dat` file. If given, the value found in this option will be used instead.
+
+## Output files
+
+A simulation will produce at least two files, which by default are `energy.dat` and `acceptance.dat`. If Grand Canonical or SUS simulations are run, there will also be a `density.dat` file. Each line of these files contain the time step and the instantaneous energy, acceptance probabilities and density.
+
+The moves to which acceptance probabilities refer depend on the chosen ensemble and dynamics:
+
+* `dynamics = 0`: one column for the rototranslation acceptance
+* `dynamics = 1`: one column for the VMMC acceptance
+* `dynamics = 2`: two columns for the rototranslations and AVB acceptances
+
+If `ensemble = 1` or `ensemble = 3` the next-to-last and last columns contain the acceptance probabilities of particle additions and deletions, respectively.
+
+## Configuration files
+
+PatchyParticles uses plain-text configuration files to store some information about the system and the positions and orientations of each particle. The first (header) line contains the time step of the configuration, the number of particles and the size of the box along the x, y and z directions.
+
+The remaining part of the file contain the orientations and positions of the particles. The information about each particle takes up three lines. The first two store the two upper rows of the orientation matrix, while the third is the position of a particle's centre of mass.   
+
 ## Code organisation
 
 * The `main.c` file contains calls to the initialisation functions, the calculation of the initial energy, the main loop and the calls to the cleanup functions.
@@ -76,3 +100,7 @@ stopped. Meaningful only for Grand Canonical (or SUS) simulations
 * The `system.c, system.h` pair contains the functions used to initialise and cleanup the main data structure (`System`).
 * The `output.c, output.h` pair contains the functions used to initialise and cleanup the data structure responsible for printing the output (`Output`), as well as the functions that actually print most of the output.
 * The `parse_input.c, parse_input.h` pair contains the data structures, logic and functions used by the code to parse the input file passed to `PatchyParticles`  
+
+## Acknowledgements
+
+The code has been developed by Lorenzo Rovigatti (CNR-ISC), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia)
