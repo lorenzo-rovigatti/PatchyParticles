@@ -1,0 +1,58 @@
+INCLUDE_DIRS =
+LIBRARY_DIRS =
+STATIC_FLAG = 
+
+ARCH = -DNDEBUG
+ADDITIONAL_FLAGS = $(OPTIMIZATION_FLAGS)
+ifeq ($(dbg), 1)
+	ADDITIONAL_FLAGS = $(DBG_FLAGS)
+	ARCH = -DDEBUG
+	STATIC_FLAG = -pg
+endif
+
+ifeq ($(g), 1)
+	ADDITIONAL_FLAGS = $(OPTIMIZATION_FLAGS) $(G_FLAGS)
+	ARCH = -DDEBUG
+	STATIC_FLAG = -pg
+endif
+
+# -- C FLAGS   ------#
+CFLAGS = $(ADDITIONAL_FLAGS) $(ARCH) $(DEF) $(INCLUDE_DIRS) -Wall -Wshadow
+
+# --- LINKER FLAGS  -------#
+LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
+
+# ---------  OBJECTS -----------#
+OBJ = parse_input.o output.o system.o MC.o utils.o avb.o vmmc.o cells.o
+
+# ---------  EXECUTABLE -----------#
+EXE = PatchyParticles
+
+# -------- COMPILATION STEPS ------#
+
+default: PatchyParticles generator
+
+all: PatchyParticles generator
+
+generator: generator.o $(OBJ)
+	$(CC) generator.o $(OBJ) $(LIBRARY_DIRS) -lm -o generator
+
+PatchyParticles: main.o $(OBJ)
+	$(CC) main.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE)
+
+# -------- SUFFIX RULES ------#
+%.o: %.c makefile.common $(MAKEFILE_NAME)
+	$(CC) $(CFLAGS) -c -o $@ $<
+	
+## --- Add dependencies by hand to make the Makefile as generic as possible --- #
+avb.o: avb.h MC.h defs.h output.h parse_input.h system.h utils.h
+cells.o: cells.h defs.h output.h
+generator.o: defs.h output.h utils.h
+main.o: defs.h MC.h output.h parse_input.h system.h utils.h
+MC.o: avb.h defs.h MC.h output.h utils.h vmmc.h 
+output.o: defs.h output.h MC.h parse_input.h utils.h
+utils.o: defs.h
+vmmc.o: defs.h MC.h defs.h output.h parse_input.h system.h utils.h
+
+clean:
+	rm -f $(EXE) $(OBJ) main.o generator generator.o
