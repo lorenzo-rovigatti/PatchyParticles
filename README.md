@@ -1,4 +1,4 @@
-# PatchyParticles
+# ![](patchy_particle.png) PatchyParticles ![](patchy_particle.png)
 
 `PatchyParticles` is a code for perfoming Monte Carlo simulations of hard particles decorated with four patches modelled through the [Kern-Frenkel](http://www.sklogwiki.org/SklogWiki/index.php/Kern_and_Frenkel_patchy_model) pair interaction potential. The code is *educational* in the sense that it is meant to be read as much as meant to be used.  
 
@@ -18,7 +18,7 @@ The code can be compiled with icc with the command
 
 	$ make -f makefile.icc
 	
-The default behaviour is to compile `PatchyParticles` with full optimisations enabled (that is, with the options `-O3 -ffast-math -DNDEBUG` or `-fast -DNDEBUG` if the code is compiled with gcc or icc, respectively)). The code can also be compiled with optimisations and debug flags (`make g=1`) or with debug flags only (`make dbg=1`).
+The default behaviour is to compile `PatchyParticles` with full optimisations enabled (that is, with the options `-O3 -ffast-math -DNDEBUG` or `-fast -DNDEBUG` if the code is compiled with gcc or icc, respectively). The code can also be compiled with optimisations and debug flags (`make g=1`) or with debug flags only (`make dbg=1`).
 
 At the end of the compilation stage there will be two executables: `PatchyParticles` and `generator`.
 
@@ -35,13 +35,10 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 ### Simulation options
 
 * `Dynamics = <int>`: use 0 for rototranslations, 1 for AVB and 2 for VMMC.
-* `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive 
-Umbrella Sampling.
-* `Temperature = <float>`: temperature of the simulation, in units of the patch-patch 
-bond.
+* `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive Umbrella Sampling.
+* `Temperature = <float>`: temperature of the simulation, in units of the patch-patch bond.
 * `Steps = <int>`: length of the simulation, in Monte Carlo steps.
-* `GC_N_max = <int>`: maximum number of particles, above which the simulation will be 
-stopped. Meaningful only for Grand Canonical (or SUS) simulations
+* `GC_N_max = <int>`: maximum number of particles, above which the simulation will be stopped. Meaningful only for Grand Canonical (or SUS) simulations
 
 ### Input/output options
 
@@ -91,6 +88,10 @@ The remaining part of the file contain the orientations and positions of the par
 
 ## Code organisation
 
+We have tried to logically split the code up in modules. We have also tried to use naming conventions that make it easier to understand the purpose of each module, function and (to a lesser extent) variable. 
+
+The code is commented lightly. However, we have tried to highlight what is done in the most important sections of the code. 
+
 * The `main.c` file contains calls to the initialisation functions, the calculation of the initial energy, the main loop and the calls to the cleanup functions.
 * The general data structures used throughout the code, as well as some useful macros, are stored in the `defs.h` file.
 * The `MC.c, MC.h` pair contains the main logic of the code. It manages the calculation of the energy, the particle rototranslations, the simulation of the different ensembles, *etc.* 
@@ -103,4 +104,4 @@ The remaining part of the file contain the orientations and positions of the par
 
 ## Acknowledgements
 
-The code has been developed by Lorenzo Rovigatti (CNR-ISC), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia)
+The code has been developed by Lorenzo Rovigatti (CNR-ISC), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia). Feel free to contact us if you have any questions/comments.
