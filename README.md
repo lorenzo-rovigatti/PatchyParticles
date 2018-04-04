@@ -34,7 +34,7 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 
 ### Simulation options
 
-* `Dynamics = <int>`: use 0 for rototranslations, 1 for AVB and 2 for VMMC.
+* `Dynamics = <int>`: use 0 for rototranslations, 1 for VMMC and 2 for AVB.
 * `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive Umbrella Sampling.
 * `Temperature = <float>`: temperature of the simulation, in units of the patch-patch bond.
 * `Steps = <int>`: length of the simulation, in Monte Carlo steps.
