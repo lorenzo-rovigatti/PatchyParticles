@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 			if(output_files.save_also_as_mgl) {
 				sprintf(name, "%s/conf_%lld.mgl", output_files.configuration_folder, curr_step);
 				output_save_to_mgl(&output_files, &syst, name);
-				output_save_to_mgl(&output_files, &syst, output_files.configuration_last);
+				output_save_to_mgl(&output_files, &syst, "last.mgl");
 			}
 		}
 
@@ -114,6 +114,9 @@ int main(int argc, char *argv[]) {
 	 * Print the last configuration and the last line of the output
 	 */
 	output_save(&output_files, &syst, curr_step, output_files.configuration_last);
+	if(output_files.save_also_as_mgl) {
+		output_save_to_mgl(&output_files, &syst, "last.mgl");
+	}
 	E = (syst.N > 0) ? syst.energy / syst.N : 0;
 	printf("%lld %lf %lf", curr_step, E, syst.energy);
 	if(syst.ensemble != 0) printf(" %lf", syst.N / syst.V);
