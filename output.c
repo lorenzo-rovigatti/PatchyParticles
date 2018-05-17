@@ -14,6 +14,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 
 void output_init(input_file *input, Output *output_files) {
 	output_files->log = stderr;
@@ -46,6 +47,9 @@ void output_init(input_file *input, Output *output_files) {
 
 	getInputLLInt(input, "Print_every", &output_files->print_every, 1);
 	getInputLLInt(input, "Save_every", &output_files->save_every, 1);
+
+	output_files->save_also_as_mgl = 0;
+	getInputInt(input, "Save_also_as_mgl", &output_files->save_also_as_mgl, 0);
 
 	sprintf(name, "energy.dat");
 	getInputString(input, "Energy_file", name, 0);
@@ -229,6 +233,37 @@ void output_print_bonds(Output *output_files, System *syst, char *name) {
 		fprintf(out, "%s\n", bond_line);
 	}
 
+	fclose(out);
+}
+
+void output_save_to_mgl(Output *output_files, System *syst, char *name) {
+	FILE *out = fopen(name, "w");
+	if(out == NULL) output_exit(output_files, "File '%s' is not writable\n", name);
+
+	fprintf(out, ".Box:%lf,%lf,%lf\n", syst->box[0], syst->box[1], syst->box[2]);
+
+	int i;
+	PatchyParticle *p = syst->particles;
+	for(i = 0; i < syst->N; i++) {
+		vector r = {p->r[0], p->r[1], p->r[2]};
+		r[0] -= syst->box[0] * floor((r[0]) / syst->box[0]);
+		r[1] -= syst->box[1] * floor((r[1]) / syst->box[1]);
+		r[2] -= syst->box[2] * floor((r[2]) / syst->box[2]);
+		fprintf(out, "%lf %lf %lf @ 0.5 C[0.521569,0.207843,0.152941,0.4] M", r[0], r[1], r[2]);
+
+		int j;
+		for(j = 0; j < syst->n_patches; j++) {
+			vector patch;
+			patch[0] = (0.5+syst->kf_delta)*p->patches[j][0];
+			patch[1] = (0.5+syst->kf_delta)*p->patches[j][1];
+			patch[2] = (0.5+syst->kf_delta)*p->patches[j][2];
+			fprintf(out, " %lf %lf %lf %lf", patch[0], patch[1], patch[2], acos(syst->kf_cosmax));
+			fprintf(out, " C[0.392157,0.584314,0.929412,1]");
+		}
+		fprintf(out, "\n");
+
+		p++;
+	}
 	fclose(out);
 }
 

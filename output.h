@@ -19,6 +19,7 @@ typedef struct Output {
 	llint start_from;
 	llint save_every;
 	llint print_every;
+	int save_also_as_mgl;
 	int print_bonds;
 	int restart_step_counter;
 	char configuration_folder[512];
@@ -36,6 +37,7 @@ void output_free(Output *output_files);
 
 void output_sus(Output *output_files, System *syst, llint step);
 void output_save(Output *output_files, System *syst, llint step, char *name);
+void output_save_to_mgl(Output *output_files, System *syst, char *name);
 void output_print(Output *output_files, System *syst, llint step);
 void output_print_bonds(Output *output_files, System *syst, char *name);
 void output_log_msg(Output *output_files, char *format, ...);

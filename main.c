@@ -96,6 +96,12 @@ int main(int argc, char *argv[]) {
 			sprintf(name, "%s/conf_%lld.rrr", output_files.configuration_folder, curr_step);
 			output_save(&output_files, &syst, curr_step, name);
 			output_save(&output_files, &syst, curr_step, output_files.configuration_last);
+
+			if(output_files.save_also_as_mgl) {
+				sprintf(name, "%s/conf_%lld.mgl", output_files.configuration_folder, curr_step);
+				output_save_to_mgl(&output_files, &syst, name);
+				output_save_to_mgl(&output_files, &syst, output_files.configuration_last);
+			}
 		}
 
 		/**

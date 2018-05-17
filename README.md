@@ -64,6 +64,7 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 
 ### Some useful non-mandatory options
 
+* `Save_also_as_mgl = <int>`: if not 0, PatchyParticles will output an additional mgl file, which can be directly visualised with [cogli1](https://sourceforge.net/projects/cogli1/), whenever configurations are printed. Defaults to 0.
 * `Restart_step_counter = <int>`: true by default, if set to false will restart the simulation from the time step found in the initial configuration file and append the energy, density and acceptance output to their respective files.
 * `Log_file = <string>`: by default PatchyParticles writes the output to the standard error. If the input file contains this option, PatchyParticles will redirect its output to the specified file.
 * `Acceptance_file = <string>`: by default acceptance probabilities are written to the `acceptance.dat` file. If given, the value found in this option will be used instead.
