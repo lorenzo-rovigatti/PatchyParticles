@@ -1,6 +1,6 @@
 # ![](patchy_particle.png) PatchyParticles ![](patchy_particle.png)
 
-`PatchyParticles` is a code for perfoming Monte Carlo simulations of hard particles decorated with four patches modelled through the [Kern-Frenkel](http://www.sklogwiki.org/SklogWiki/index.php/Kern_and_Frenkel_patchy_model) pair interaction potential. The code is *educational* in the sense that it is meant to be read as much as meant to be used.  
+`PatchyParticles` is a code for perfoming Monte Carlo simulations of hard particles decorated with four patches modelled through the [Kern-Frenkel](http://www.sklogwiki.org/SklogWiki/index.php/Kern_and_Frenkel_patchy_model) pair interaction potential. The code accompanies the Colloquium paper [How to simulate patchy particles](https://doi.org/10.1140/epje/i2018-11667-x), *Eur. Phys. J. E* (2018) **41**: 59, and it is *educational* in the sense that it is meant to be read as much as meant to be used.
 
 ## Compilation
 
