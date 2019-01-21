@@ -71,7 +71,7 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 
 ## Output files
 
-A simulation will produce at least two files, which by default are `energy.dat` and `acceptance.dat`. If Grand Canonical or SUS simulations are run, there will also be a `density.dat` file. Each line of these files contain the time step and the instantaneous energy, acceptance probabilities and density.
+A simulation will produce at least two files, which by default are `energy.dat` and `acceptance.dat`. If Grand Canonical or SUS simulations are run, there will also be a `density.dat` file. Each line of these files contain the time step and the instantaneous energy, acceptance probabilities and density, respectively.
 
 The moves to which acceptance probabilities refer depend on the chosen ensemble and dynamics:
 
@@ -93,10 +93,10 @@ We have tried to logically split the code up in modules. We have also tried to u
 
 The code is commented lightly. However, we have tried to highlight what is done in the most important sections of the code. 
 
-* The `main.c` file contains calls to the initialisation functions, the calculation of the initial energy, the main loop and the calls to the cleanup functions.
+* The `main.c` file contains calls to the initialisation functions, the calculation of the initial energy, the main loop and calls to the cleanup functions.
 * The general data structures used throughout the code, as well as some useful macros, are stored in the `defs.h` file.
 * The `MC.c, MC.h` pair contains the main logic of the code. It manages the calculation of the energy, the particle rototranslations, the simulation of the different ensembles, *etc.* 
-* The `avb.c, avb.h` and `vmmc.c, vmmc.h` pairs contain the data structures and functions pertaining to the Aggregation-Volume-Bias and Virtual-Move-Monte-Carlo moves that can be optionally enabled to speed up the simulation efficiencies.
+* The `avb.c, avb.h` and `vmmc.c, vmmc.h` pairs contain the data structures and functions pertaining to the Aggregation-Volume-Bias and Virtual-Move-Monte-Carlo moves that can be optionally enabled to speed up the calculations.
 * The `cells.c, cells.h` pair contain the data structures and functions pertaining to the linked-lists used to keep track of the list of neighbours of each particle.
 * The `utils.c, utils.h` pair contains commonly-used functions to work with vectors and matrices.
 * The `system.c, system.h` pair contains the functions used to initialise and cleanup the main data structure (`System`).
@@ -105,4 +105,4 @@ The code is commented lightly. However, we have tried to highlight what is done 
 
 ## Acknowledgements
 
-The code has been developed by Lorenzo Rovigatti (CNR-ISC), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia). Feel free to contact us if you have any questions/comments.
+The code has been developed by Lorenzo Rovigatti (Dipartimento di Fisica, Sapienza University of Rome), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia). Feel free to contact us if you have any questions/comments, and if you use the code in your project please consider adding a reference to the [`PatchyParticles` paper](https://doi.org/10.1140/epje/i2018-11667-x).
