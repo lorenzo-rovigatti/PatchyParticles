@@ -446,13 +446,13 @@ void MC_add_remove(System *syst, Output *IO) {
 
 void MC_add_remove_biased(System *syst, Output *IO) {
 	// try to add a particle
-	
+
 	if(drand48() < 0.5) {
 		if(syst->N == syst->N_max) {
 			if(syst->ensemble == GC) output_exit(IO, "The system contains the maximum number of particles set in the input file (%d), increase GC_N_max\n", syst->N_max);
-			
+
 			syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=1.;
-			
+
 			return;
 		}
 		syst->tries[ADD]++;
@@ -473,20 +473,20 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 
 		double delta_E = energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
-		
+
 		double pa;
 		if (syst->overlap==1)
 			pa=0;
 		else
 			pa=(acc>1 ? 1 : acc);
-		
+
 		syst->bsus_collect[3*(syst->N-syst->N_min)+2]+=pa;
 		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
-		
+
 		double bias=syst->bsus_pm[syst->N-syst->N_min+1]-syst->bsus_pm[syst->N-syst->N_min];
-		
-		
-		if(!syst->overlap && drand48() < exp(-bias)*acc) {	
+
+
+		if(!syst->overlap && drand48() < exp(-bias)*acc) {
 			syst->energy += delta_E;
 
 			// add the particle to the new cell
@@ -516,14 +516,14 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 
 		double delta_E = -energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
-		
+
 		double pa=(acc>1 ? 1 : acc);
-		
+
 		syst->bsus_collect[3*(syst->N-syst->N_min)+0]+=pa;
 		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
-		
+
 		double bias=syst->bsus_pm[syst->N-syst->N_min-1]-syst->bsus_pm[syst->N-syst->N_min];
-		
+
 		if(drand48() < exp(-bias)*acc) {
 			syst->energy += delta_E;
 			syst->N--;
@@ -583,21 +583,21 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 
 void bsus_update_histo(System *syst)
 {
-	
+
 	int histogram_size=syst->N_max-syst->N_min+1;
-	
-	
+
+
 	syst->bsus_pm[0]=1.0;
-	
+
 	int i;
-	
+
 	for (i=0;i<histogram_size;i++)
 	{
 		syst->bsus_normvec[i]=syst->bsus_collect[3*i];
 		syst->bsus_normvec[i]+=syst->bsus_collect[3*i+1];
 		syst->bsus_normvec[i]+=syst->bsus_collect[3*i+2];
 	}
-	
+
 	for (i=0;i<histogram_size;i++)
 	{
 		if (syst->bsus_normvec[i]>0)
@@ -606,20 +606,20 @@ void bsus_update_histo(System *syst)
 			syst->bsus_tm[3*i+1]=syst->bsus_collect[3*i+1]/syst->bsus_normvec[i];
 			syst->bsus_tm[3*i+2]=syst->bsus_collect[3*i+2]/syst->bsus_normvec[i];
 		}
-		
+
 	}
-	
-	for (i=0;i<histogram_size;i++)
+
+	for (i=0;i<histogram_size-1;i++)
 	{
 		double lratio;
 		if ( (syst->bsus_tm[3*(i+1)]>0) && (syst->bsus_tm[3*i+2]>0) )
 			lratio=log(syst->bsus_tm[3*i+2]/syst->bsus_tm[3*(i+1)]);
 		else
 			lratio=0.;
-		
+
 		syst->bsus_pm[i+1]=syst->bsus_pm[i]+lratio;
 	}
-	
+
 }
 
 

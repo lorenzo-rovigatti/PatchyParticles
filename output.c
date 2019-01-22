@@ -94,7 +94,7 @@ void output_print(Output *IO, System *syst, llint step) {
 		fprintf(IO->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
 		fflush(IO->density);
 	}
-	
+
 	// print acceptances for dynamics
 	fprintf(IO->acc, "%lld", step);
 	switch (syst->dynamics) {
@@ -111,7 +111,7 @@ void output_print(Output *IO, System *syst, llint step) {
 	default:
 		break;
 	}
-	
+
 	// print acceptances for ensemble moves (on the same line as above)
 	switch (syst->ensemble) {
 	case GC:
@@ -121,7 +121,7 @@ void output_print(Output *IO, System *syst, llint step) {
 	default:
 		break;
 	}
-	
+
 	fprintf(IO->acc, "\n");
 	fflush(IO->acc);
 	utils_reset_acceptance_counters(syst);
@@ -172,16 +172,16 @@ void output_bsus(Output *IO, System *syst, llint step) {
 	FILE *out = fopen(name, "w");
 	FILE *outlast=fopen("last_bsus.dat","w");
 	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
-	
+
 	int i;
 	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
-		if(syst->bsus_pm[i] > 0)
-		{
+		// if(syst->bsus_pm[i] > 0)
+		// {
 			fprintf(out, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
 			fprintf(outlast, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
-		}
+		// }
 	}
-	
+
 	fclose(out);
 	fclose(outlast);
 }
