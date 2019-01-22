@@ -73,6 +73,10 @@ int main(int argc, char *argv[]) {
 	/**
 	 * Main loop
 	 */
+
+	 // reconstruct the histogram in case the bsus file is read from input
+	 if(syst.ensemble == BSUS) bsus_update_histo(&syst);
+
 	for(curr_step = output_files.start_from; curr_step < steps && !stop; curr_step++) {
 		/**
 		 * Print the output (energy, density, acceptance, etc.) every "print_every" steps

@@ -11,6 +11,7 @@
 #include <float.h>
 #include <time.h>
 #include <math.h>
+#include <assert.h>
 
 #include "MC.h"
 #include "output.h"
@@ -64,6 +65,10 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	char name[256];
 	getInputString(input, "Initial_conditions_file", name, 1);
+
+	char bsus_name[256];
+	int bsus_value=getInputString(input, "Initial_bsus_file", bsus_name, 0);
+
 	if(getInputInt(input, "Seed", &syst->seed, 0) == KEY_NOT_FOUND) {
 		syst->seed = time(NULL);
 		output_log_msg(output_files, "Using seed %d\n", syst->seed);
@@ -98,22 +103,41 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			syst->SUS_hist = calloc(syst->N_max - syst->N_min + 1, sizeof(llint));
 			break;
 		case BSUS:
-			
+
 			getInputInt(input, "Umbrella_sampling_min", &syst->N_min, 1);
 			getInputInt(input, "Umbrella_sampling_max", &syst->N_max, 1);
 			if(syst->N < syst->N_min) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
 			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
-			
+
 			int transition_size=3*(syst->N_max-syst->N_min+1);
 			int histogram_size=syst->N_max-syst->N_min+1;
-			
+
 			syst->bsus_collect=calloc(transition_size,sizeof(double));
 			syst->bsus_tm=calloc(transition_size,sizeof(double));
 			syst->bsus_normvec=calloc(histogram_size,sizeof(double));
 			syst->bsus_pm=calloc(histogram_size,sizeof(double));
-			
+
+			if (bsus_value!=KEY_NOT_FOUND)
+			{
+				FILE *bsus_file=fopen(bsus_name,"r");
+
+				char myline[512];
+				int p=0;
+				char *s_res = fgets(myline, 512, bsus_file);
+				while(s_res != NULL) {
+					sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect+3*p,syst->bsus_collect+3*p+1,syst->bsus_collect+3*p+2);
+
+					p++;
+					s_res = fgets(myline, 512, bsus_file);
+				}
+
+				assert(p==histogram_size);
+
+				fclose(bsus_file);
+			}
+
 			break;
-			
+
 		default:
 			output_exit(output_files, "Unsupported ensemble '%d'\n", syst->ensemble);
 			break;
@@ -189,10 +213,10 @@ void system_free(System *syst) {
 			free(p->patches);
 		}
 	}
-	
+
 	free(syst->particles);
 	if(syst->ensemble == SUS) free(syst->SUS_hist);
-	
+
 	if (syst->ensemble==BSUS)
 	{
 		free(syst->bsus_collect);
