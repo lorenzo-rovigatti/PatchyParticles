@@ -74,8 +74,6 @@ int main(int argc, char *argv[]) {
 	 * Main loop
 	 */
 
-	 // reconstruct the histogram in case the bsus file is read from input
-	 if(syst.ensemble == BSUS) bsus_update_histo(&syst);
 
 	for(curr_step = output_files.start_from; curr_step < steps && !stop; curr_step++) {
 		/**
@@ -100,7 +98,7 @@ int main(int argc, char *argv[]) {
 		if(curr_step > 0 && (curr_step % output_files.save_every) == 0) {
 			char name[1024];
 			sprintf(name, "%s/conf_%lld.rrr", output_files.configuration_folder, curr_step);
-			//output_save(&output_files, &syst, curr_step, name);
+			output_save(&output_files, &syst, curr_step, name);
 			output_save(&output_files, &syst, curr_step, output_files.configuration_last);
 
 			if(syst.ensemble == BSUS)

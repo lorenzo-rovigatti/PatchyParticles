@@ -121,19 +121,25 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			{
 				FILE *bsus_file=fopen(bsus_name,"r");
 
-				char myline[512];
-				int p=0;
-				char *s_res = fgets(myline, 512, bsus_file);
-				while(s_res != NULL) {
-					sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect+3*p,syst->bsus_collect+3*p+1,syst->bsus_collect+3*p+2);
+				if (bsus_file)
+				{
+					char myline[512];
+					int p=0;
+					char *s_res = fgets(myline, 512, bsus_file);
+					while(s_res != NULL) {
+						sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect+3*p,syst->bsus_collect+3*p+1,syst->bsus_collect+3*p+2);
 
-					p++;
-					s_res = fgets(myline, 512, bsus_file);
+						p++;
+
+						s_res = fgets(myline, 512, bsus_file);
+					}
+
+					assert(p==histogram_size);
+
+					fclose(bsus_file);
+
+					bsus_update_histo(syst);
 				}
-
-				assert(p==histogram_size);
-
-				fclose(bsus_file);
 			}
 
 			break;
