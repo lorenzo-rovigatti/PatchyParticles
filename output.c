@@ -134,6 +134,7 @@ void output_print(Output *IO, System *syst, llint step) {
 }
 
 void output_save(Output *IO, System *syst, llint step, char *name) {
+
 	FILE *out = fopen(name, "w");
 	if(out == NULL) output_exit(IO, "File '%s' is not writable\n", name);
 
@@ -148,6 +149,7 @@ void output_save(Output *IO, System *syst, llint step, char *name) {
 		p++;
 	}
 	fclose(out);
+
 }
 
 void output_sus(Output *IO, System *syst, llint step) {
@@ -171,7 +173,7 @@ void output_bsus(Output *IO, System *syst, llint step) {
 	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
 	FILE *out = fopen(name, "w");
 	FILE *outlast=fopen("last_bsus.dat","w");
-	FILE *outhisto=fopen("last_bsus_collect.dat","w");
+	FILE *outhisto=fopen("last_bsus_collect.dat","wb");
 	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
 
 	int i;

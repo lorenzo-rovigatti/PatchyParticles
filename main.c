@@ -96,9 +96,10 @@ int main(int argc, char *argv[]) {
 		 * Print the configuration every "save_every" steps
 		 */
 		if(curr_step > 0 && (curr_step % output_files.save_every) == 0) {
+
 			char name[1024];
 			sprintf(name, "%s/conf_%lld.rrr", output_files.configuration_folder, curr_step);
-			output_save(&output_files, &syst, curr_step, name);
+			//output_save(&output_files, &syst, curr_step, name);
 			output_save(&output_files, &syst, curr_step, output_files.configuration_last);
 
 			if(syst.ensemble == BSUS)

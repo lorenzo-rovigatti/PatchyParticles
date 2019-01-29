@@ -119,10 +119,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 			if (bsus_value!=KEY_NOT_FOUND)
 			{
-				FILE *bsus_file=fopen(bsus_name,"r");
+				FILE *bsus_file=fopen(bsus_name,"rb");
 
 				if (bsus_file)
 				{
+					output_log_msg(output_files, "Reading initial BSUS collection matrix\n");
+
 					char myline[512];
 					int p=0;
 					char *s_res = fgets(myline, 512, bsus_file);
@@ -140,6 +142,14 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 					bsus_update_histo(syst);
 				}
+				else
+				{
+					output_log_msg(output_files, "No initial BSUS collection matrix found\n");
+				}
+			}
+			else
+			{
+				output_log_msg(output_files, "No initial BSUS collection matrix declared\n");
 			}
 
 			break;
