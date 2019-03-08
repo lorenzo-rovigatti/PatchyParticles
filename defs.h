@@ -8,17 +8,19 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#define N_MOVES 6
+#define N_MOVES 7
 #define ROTO_TRASL 0
 #define AVB 1
 #define ADD 2
 #define REMOVE 3
 #define AVB_IN_IN 4
 #define MOVE_VMMC 5
+#define VOLUME 6
 
 #define NVT 0
 #define GC 1
 #define SUS 3
+#define NPT 5
 
 #define RTMC 0
 #define VMMC 1
@@ -57,6 +59,7 @@ typedef struct System {
 	double V;
 	double T;
 	double z;
+	double P;
 	double energy;
 	int n_patches;
 
@@ -83,8 +86,10 @@ typedef struct System {
 
 	double disp_max;
 	double theta_max;
+	double rescale_factor_max;
 
 	double kf_delta, kf_cosmax, kf_sqr_rcut;
+	double r_cut;
 
 	Cells *cells;
 

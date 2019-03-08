@@ -35,8 +35,9 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 ### Simulation options
 
 * `Dynamics = <int>`: use 0 for rototranslations, 1 for VMMC and 2 for AVB.
-* `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive Umbrella Sampling.
+* `Ensemble = <int>`: use 0 for NVT, 1 for Grand Canonical (muVT), 3 for Successive Umbrella Sampling and 5 for NPT.
 * `Temperature = <float>`: temperature of the simulation, in units of the patch-patch bond.
+* `P = <float>`: pressure of the simulation, in units of the patch-patch bond over the cube of the particle diameter. Used in NPT simulations only.
 * `Steps = <int>`: length of the simulation, in Monte Carlo steps.
 * `GC_N_max = <int>`: maximum number of particles, above which the simulation will be stopped. Meaningful only for Grand Canonical (or SUS) simulations
 
@@ -61,6 +62,7 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 * `Theta_max = <float>`: maximum trial angular displacement for rotations, in radians.
 * `vmmc_max_move = <float>`: maximum allowed displacement for VMMC moves: if a vmmc move attempts to move a particle for more than this value, the move will be rejected.
 * `vmmc_max_cluster = <int>`: maximum cluster size for VMMC moves: if a vmmc move attempts to move more than this number of particles, the move will be rejected.
+* `rescale_factor_max = <float>`: maximum trial displacement for volume changes. The proposed new volume is computed as `ln_final_V = log(initial_V) + (R - 0.5)*rescale_factor_max`, where `R` is a `[0, 1]` number extracted from a uniform distribution. Used in NPT simulations only.
 
 ### Some useful non-mandatory options
 

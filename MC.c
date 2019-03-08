@@ -44,6 +44,16 @@ void do_SUS(System *syst, Output *output_files) {
 	}
 }
 
+void do_NPT(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N; i++) {
+		if(drand48() < 1./syst->N) {
+			MC_change_volume(syst, output_files);
+		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
 void MC_init(input_file *input, System *syst, Output *IO) {
 	/**
 	 * Here we set the pointer to the function that will be used to make a Monte Carlo step
@@ -58,6 +68,9 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		break;
 	case SUS:
 		syst->do_ensemble = &do_SUS;
+		break;
+	case NPT:
+		syst->do_ensemble = &do_NPT;
 		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
@@ -403,6 +416,68 @@ void MC_add_remove(System *syst, Output *IO) {
 	}
 }
 
+void MC_change_volume(System *syst, Output *IO) {
+	syst->tries[VOLUME]++;
+
+	double delta_E = -syst->energy;
+	double initial_V = syst->box[0] * syst->box[1] * syst->box[2];
+
+	// pick a random direction
+	int dir = drand48() * 3;
+	// extract a random volume change
+	double ln_final_V = log(initial_V) + (drand48() - 0.5)*syst->rescale_factor_max;
+	double final_V = exp(ln_final_V);
+
+	double old_side = syst->box[dir];
+	double new_side = final_V;
+	int i = 0;
+	for(i = 0; i < 3; i++) {
+		if(i != dir) new_side /= syst->box[i];
+	}
+
+	syst->box[dir] = new_side;
+	double rescale_factor = new_side / old_side;
+
+	// if we compress the system too much we'll have to recompute the cells
+	if((syst->box[dir] / syst->cells->N_side[dir]) < syst->r_cut) {
+		cells_free(syst->cells);
+		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
+	}
+
+	// rescale particles' positions
+	for(i = 0; i < syst->N; i++) {
+		PatchyParticle *p = syst->particles + i;
+		p->r[dir] *= rescale_factor;
+	}
+
+	// compute the new energy
+	int overlap_found = 0;
+	for(i = 0; i < syst->N && !overlap_found; i++) {
+		PatchyParticle *p = syst->particles + i;
+		delta_E += MC_energy(syst, p) * 0.5;
+		if(syst->overlap) overlap_found = 1;
+	}
+
+	double delta_V = final_V - initial_V;
+	double exp_arg = -(syst->P * delta_V + delta_E) / syst->T + (syst->N + 1) * log(rescale_factor);
+	if(!overlap_found && drand48() < exp(exp_arg)) {
+		syst->V = final_V;
+		syst->energy += delta_E;
+		syst->accepted[VOLUME]++;
+	}
+	else {
+//		if(!overlap_found) printf("rejected %lf -- %lf %lf %lf\n", syst->P*delta_V, delta_E, (syst->N + 1) * log(rescale_factor), exp(exp_arg));
+		for(i = 0; i < syst->N; i++) {
+			PatchyParticle *p = syst->particles + i;
+			p->r[dir] /= rescale_factor;
+		}
+
+		syst->box[dir] = old_side;
+		syst->overlap = 0;
+	}
+}
+
 void MC_check_energy(System *syst, Output *IO) {
 	int i;
 	double E = 0.;
@@ -414,7 +489,7 @@ void MC_check_energy(System *syst, Output *IO) {
 	}
 	E *= 0.5;
 
-	if(syst->overlap) output_exit(IO, "\nComputing energy from scratch resulted in an overlap, aborting");
+	if(syst->overlap) output_exit(IO, "\nComputing energy from scratch resulted in an overlap, aborting\n");
 	if(fabs(syst->energy) > 1e-5 && fabs((E - syst->energy) / syst->energy) > 1e-5) {
 		output_exit(IO, "\nEnergy check failed, old energy = %lf, new energy = %lf\n", syst->energy, E);
 	}

@@ -146,8 +146,12 @@ void output_print(Output *output_files, System *syst, llint step) {
 	 */
 	switch (syst->ensemble) {
 	case GC:
+	case SUS:
 		fprintf(output_files->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
 		fprintf(output_files->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
+		break;
+	case NPT:
+		fprintf(output_files->acc, " %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME]);
 		break;
 	default:
 		break;
