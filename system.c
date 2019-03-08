@@ -110,6 +110,15 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
 		getInputDouble(input, "P", &syst->P, 1);
 	}
+	else {
+		syst->Lx_move = 0;
+		getInputInt(input, "Lx_move", &syst->Lx_move, 0);
+		if(syst->Lx_move) {
+			getInputDouble(input, "Lx_change_max", &syst->Lx_change_max, 1);
+			getInputDouble(input, "Lx_min", &syst->Lx_min, 1);
+			getInputDouble(input, "Lx_max", &syst->Lx_max, 1);
+		}
+	}
 
 	syst->V = syst->box[0] * syst->box[1] * syst->box[2];
 	syst->particles = malloc(syst->N_max * sizeof(PatchyParticle));

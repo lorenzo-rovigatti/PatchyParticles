@@ -20,13 +20,14 @@ int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, in
 
 double MC_energy(System *syst, PatchyParticle *p);
 
-void MC_add_remove(System *syst, Output *IO);
-void MC_change_volume(System *syst, Output *IO);
-void MC_move_rototranslate(System *syst, Output *IO);
+void MC_add_remove(System *syst, Output *output_files);
+void MC_move_rototranslate(System *syst, Output *output_files);
+void MC_change_volume(System *syst, Output *output_files);
+void MC_change_Lx(System *syst, Output *output_files);
 
-void MC_init(input_file *input, System *syst, Output *IO);
+void MC_init(input_file *input, System *syst, Output *output_files);
 void MC_free(System *syst);
 void MC_change_cell(System *syst, PatchyParticle *p);
-void MC_check_energy(System *syst, Output *IO);
+void MC_check_energy(System *syst, Output *output_files);
 
 #endif /* MC_H_ */

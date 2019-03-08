@@ -20,14 +20,23 @@ void do_NVT(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N; i++) {
 		syst->do_dynamics(syst, output_files);
+
+		double R = drand48();
+		if(syst->Lx_move && R < 1. / syst->N) {
+			MC_change_Lx(syst, output_files);
+		}
 	}
 }
 
 void do_GC(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N_max; i++) {
-		if(drand48() < 0.01) {
+		double R = drand48();
+		if(R < 0.01) {
 			MC_add_remove(syst, output_files);
+		}
+		else if(syst->Lx_move && R < (0.01 + 1. / syst->N)) {
+			MC_change_Lx(syst, output_files);
 		}
 		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
 	}
@@ -36,9 +45,13 @@ void do_GC(System *syst, Output *output_files) {
 void do_SUS(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N_max; i++) {
-		if(drand48() < 0.01) {
+		double R = drand48();
+		if(R < 0.01) {
 			MC_add_remove(syst, output_files);
 			syst->SUS_hist[syst->N - syst->N_min]++;
+		}
+		else if(syst->Lx_move && R < (0.01 + 1. / syst->N)) {
+			MC_change_Lx(syst, output_files);
 		}
 		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
 	}
@@ -474,6 +487,78 @@ void MC_change_volume(System *syst, Output *IO) {
 		}
 
 		syst->box[dir] = old_side;
+		syst->overlap = 0;
+	}
+}
+
+void MC_change_Lx(System *syst, Output *IO) {
+	syst->tries[LX]++;
+
+	double delta_E = -syst->energy;
+
+	vector old_sides;
+	set_vector(old_sides, syst->box[0], syst->box[1], syst->box[2]);
+	syst->box[0] += (drand48() - 0.5) * syst->Lx_change_max;
+	// early rejection if Lx exceeds the allowed range
+	if(syst->box[0] < syst->Lx_min || syst->box[0] > syst->Lx_max) {
+		syst->box[0] = old_sides[0];
+		return;
+	}
+
+	// we keep the volume constant
+	syst->box[1] = syst->box[2] = sqrt(syst->V / syst->box[0]);
+
+	// if we compress the system too much we'll have to recompute the cells
+	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
+		cells_free(syst->cells);
+		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
+	}
+
+	vector rescale_factors = {
+		syst->box[0] / old_sides[0],
+		syst->box[1] / old_sides[1],
+		syst->box[2] / old_sides[2]
+	};
+
+	// rescale particles' positions
+	int i;
+	for(i = 0; i < syst->N; i++) {
+		PatchyParticle *p = syst->particles + i;
+		p->r[0] *= rescale_factors[0];
+		p->r[1] *= rescale_factors[1];
+		p->r[2] *= rescale_factors[2];
+	}
+
+	// compute the new energy
+	int overlap_found = 0;
+	for(i = 0; i < syst->N && !overlap_found; i++) {
+		PatchyParticle *p = syst->particles + i;
+		delta_E += MC_energy(syst, p) * 0.5;
+		if(syst->overlap) overlap_found = 1;
+	}
+
+	if(!overlap_found && drand48() < exp(delta_E / syst->T)) {
+		syst->energy += delta_E;
+		syst->accepted[LX]++;
+	}
+	else {
+		for(i = 0; i < syst->N; i++) {
+			PatchyParticle *p = syst->particles + i;
+			p->r[0] /= rescale_factors[0];
+			p->r[1] /= rescale_factors[1];
+			p->r[2] /= rescale_factors[2];
+		}
+
+		set_vector(syst->box, old_sides[0], old_sides[1], old_sides[2]);
+
+		// we might have to recompute the cells once again
+		if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
+			cells_free(syst->cells);
+			cells_init(syst, IO, syst->r_cut);
+			cells_fill(syst);
+		}
+
 		syst->overlap = 0;
 	}
 }

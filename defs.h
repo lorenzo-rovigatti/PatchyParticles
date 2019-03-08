@@ -8,7 +8,7 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#define N_MOVES 7
+#define N_MOVES 8
 #define ROTO_TRASL 0
 #define AVB 1
 #define ADD 2
@@ -16,6 +16,7 @@
 #define AVB_IN_IN 4
 #define MOVE_VMMC 5
 #define VOLUME 6
+#define LX 7
 
 #define NVT 0
 #define GC 1
@@ -71,6 +72,7 @@ typedef struct System {
 
 	int dynamics;
 	int ensemble;
+	int Lx_move;
 	void (*do_dynamics)(struct System *, Output *);
 	void (*do_ensemble)(struct System *, Output *);
 
@@ -87,6 +89,9 @@ typedef struct System {
 	double disp_max;
 	double theta_max;
 	double rescale_factor_max;
+	double Lx_change_max;
+	double Lx_min;
+	double Lx_max;
 
 	double kf_delta, kf_cosmax, kf_sqr_rcut;
 	double r_cut;
