@@ -65,8 +65,8 @@ Here is a list of mandatory options. Please refer to the input files in the `Exa
 * `rescale_factor_max = <float>`: maximum trial displacement for volume changes. The proposed new volume is computed as `ln_final_V = log(initial_V) + (R - 0.5)*rescale_factor_max`, where `R` is a `[0, 1]` number extracted from a uniform distribution. Used in NPT simulations only.
 * `Lx_move = <int>`: if set to 1, enable a move that changes the Lx side of the box while keeping the volume constant (with `Ly = Lz`).
 * `Lx_change_max = <float>`: maximum trial changes for the `Lx` box side.
-* `Lx_min = <float>`: minimum value for the `Lx` box side.
-* `Lx_max = <float>`: maximum value for the `Lx` box side.
+* `Lx_min = <float>`: this value times the initial `Lx` is the minimum value allowed for `Lx`. It may not be larger than 1. 
+* `Lx_max = <float>`: this value times the initial `Lx` is the maximum value allowed for `Lx`. It may not be smaller than 1.
 
 ### Some useful non-mandatory options
 

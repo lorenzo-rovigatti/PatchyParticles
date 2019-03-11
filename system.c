@@ -117,6 +117,17 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			getInputDouble(input, "Lx_change_max", &syst->Lx_change_max, 1);
 			getInputDouble(input, "Lx_min", &syst->Lx_min, 1);
 			getInputDouble(input, "Lx_max", &syst->Lx_max, 1);
+
+			if(syst->Lx_min >= 1.) {
+				output_exit(output_files, "Lx_min should be < 1\n");
+			}
+
+			if(syst->Lx_max <= 1.) {
+				output_exit(output_files, "Lx_max should be < 1\n");
+			}
+
+			syst->Lx_min *= syst->box[0];
+			syst->Lx_max *= syst->box[0];
 		}
 	}
 
