@@ -499,14 +499,14 @@ void MC_change_Lx(System *syst, Output *IO) {
 	vector old_sides;
 	set_vector(old_sides, syst->box[0], syst->box[1], syst->box[2]);
 	syst->box[0] += (drand48() - 0.5) * syst->Lx_change_max;
-	// early rejection if Lx exceeds the allowed range
-	if(syst->box[0] < syst->Lx_min || syst->box[0] > syst->Lx_max) {
-		syst->box[0] = old_sides[0];
-		return;
-	}
-
 	// we keep the volume constant
 	syst->box[1] = syst->box[2] = sqrt(syst->V / syst->box[0]);
+
+	// early rejection if Ly (or, equivalently, Lz) is not within the allowed range
+	if(syst->box[1] < syst->Lyz_min || syst->box[1] > syst->Lyz_max) {
+		set_vector(syst->box, old_sides[0], old_sides[1], old_sides[2]);
+		return;
+	}
 
 	// if we compress the system too much we'll have to recompute the cells
 	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {

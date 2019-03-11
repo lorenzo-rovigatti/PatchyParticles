@@ -114,20 +114,26 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->Lx_move = 0;
 		getInputInt(input, "Lx_move", &syst->Lx_move, 0);
 		if(syst->Lx_move) {
+			if(syst->box[1] != syst->box[2]) {
+				output_exit(output_files, "Lx_move = 1 requires Ly = Lz\n");
+			}
+
 			getInputDouble(input, "Lx_change_max", &syst->Lx_change_max, 1);
-			getInputDouble(input, "Lx_min", &syst->Lx_min, 1);
-			getInputDouble(input, "Lx_max", &syst->Lx_max, 1);
+			getInputDouble(input, "Lyz_min", &syst->Lyz_min, 1);
+			getInputDouble(input, "Lyz_max", &syst->Lyz_max, 1);
 
-			if(syst->Lx_min >= 1.) {
-				output_exit(output_files, "Lx_min should be < 1\n");
+			if(syst->Lyz_min >= 1.) {
+				output_exit(output_files, "Lyz_min should be < 1\n");
 			}
 
-			if(syst->Lx_max <= 1.) {
-				output_exit(output_files, "Lx_max should be < 1\n");
+			if(syst->Lyz_max <= 1.) {
+				output_exit(output_files, "Lyz_max should be < 1\n");
 			}
 
-			syst->Lx_min *= syst->box[0];
-			syst->Lx_max *= syst->box[0];
+			syst->Lyz_min *= syst->box[1];
+			syst->Lyz_max *= syst->box[1];
+
+			output_log_msg(output_files, "Ly and Lz are allowed to vary between %lf and %lf\n", syst->Lyz_min, syst->Lyz_max);
 		}
 	}
 
