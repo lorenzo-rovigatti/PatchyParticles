@@ -19,7 +19,7 @@ void output_init(input_file *input, Output *output_files) {
 	char name[512];
 	if(getInputString(input, "Log_file", name, 0) == KEY_FOUND) {
 		if(strcmp("none", name) != 0) {
-			FILE *mylog = fopen(name, "w");
+			FILE *mylog = fopen(name, "a");
 			if(mylog == NULL) output_exit(output_files, "Log file '%s' is not writable\n", name);
 			output_files->log = mylog;
 		}

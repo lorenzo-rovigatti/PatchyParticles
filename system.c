@@ -130,6 +130,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 					char *s_res = fgets(myline, 512, bsus_file);
 					while(s_res != NULL) {
 						sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect+3*p,syst->bsus_collect+3*p+1,syst->bsus_collect+3*p+2);
+						output_log_msg(output_files, "%lf %lf %lf\n",syst->bsus_collect[3*p],syst->bsus_collect[3*p+1],syst->bsus_collect[3*p+2]);
 
 						p++;
 
