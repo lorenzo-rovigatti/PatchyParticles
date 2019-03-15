@@ -22,6 +22,7 @@
 #define GC 1
 #define SUS 3
 #define NPT 5
+#define BSUS 4
 
 #define RTMC 0
 #define VMMC 1
@@ -76,11 +77,19 @@ typedef struct System {
 	void (*do_dynamics)(struct System *, Output *);
 	void (*do_ensemble)(struct System *, Output *);
 
+	// non-biased sus variables
 	llint *SUS_hist;
 	llint **SUS_e_hist;
 	double SUS_e_step;
 	int SUS_e_bins;
-
+	
+	// biased sus variables
+	double *bsus_collect;
+	double *bsus_tm;
+	double *bsus_normvec;
+	double *bsus_pm;
+	
+	
 	int overlap;
 
 	int tries[N_MOVES];

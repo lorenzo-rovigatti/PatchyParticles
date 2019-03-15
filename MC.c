@@ -67,6 +67,21 @@ void do_NPT(System *syst, Output *output_files) {
 	}
 }
 
+
+void do_BSUS(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		double R = drand48();
+		if(R < 0.5) {
+			MC_add_remove_biased(syst, output_files);
+		}
+		else if(syst->Lx_move && R < (0.5 + 1. / syst->N)) {
+			MC_change_Lx(syst, output_files);
+		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
 void MC_init(input_file *input, System *syst, Output *IO) {
 	/**
 	 * Here we set the pointer to the function that will be used to make a Monte Carlo step
@@ -84,6 +99,9 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		break;
 	case NPT:
 		syst->do_ensemble = &do_NPT;
+		break;
+	case BSUS:
+		syst->do_ensemble= &do_BSUS;
 		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
@@ -563,7 +581,187 @@ void MC_change_Lx(System *syst, Output *IO) {
 	}
 }
 
+void MC_add_remove_biased(System *syst, Output *IO) {
+	// try to add a particle
+
+	if(drand48() < 0.5) {
+		if(syst->N == syst->N_max) {
+			if(syst->ensemble == GC) output_exit(IO, "The system contains the maximum number of particles set in the input file (%d), increase GC_N_max\n", syst->N_max);
+
+			syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=1.;
+
+			return;
+		}
+		syst->tries[ADD]++;
+
+		PatchyParticle *p = syst->particles + syst->N;
+		p->index = syst->N;
+
+		p->r[0] = drand48() * syst->box[0];
+		p->r[1] = drand48() * syst->box[1];
+		p->r[2] = drand48() * syst->box[2];
+
+		random_orientation(syst, p->orientation);
+
+		int i;
+		for(i = 0; i < p->n_patches; i++) {
+			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+		}
+
+		double delta_E = MC_energy(syst, p);
+		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
+
+		double pa;
+		if (syst->overlap==1)
+			pa=0;
+		else
+			pa=(acc>1 ? 1 : acc);
+
+		syst->bsus_collect[3*(syst->N-syst->N_min)+2]+=pa;
+		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
+
+		double bias=syst->bsus_pm[syst->N-syst->N_min+1]-syst->bsus_pm[syst->N-syst->N_min];
+
+
+		if(!syst->overlap && drand48() < exp(-bias)*acc) {
+			syst->energy += delta_E;
+
+			// add the particle to the new cell
+			int ind[3];
+			int cell_index = cells_fill_and_get_idx_from_particle(syst, p, ind);
+			syst->cells->next[p->index] = syst->cells->heads[cell_index];
+			syst->cells->heads[cell_index] = p;
+			p->cell = p->cell_old = cell_index;
+
+			syst->N++;
+			syst->accepted[ADD]++;
+		}
+		else {
+			syst->overlap = 0;
+		}
+	}
+	// try to remove a particle
+	else {
+		if(syst->N == syst->N_min)
+		{
+			syst->bsus_collect[1]+=1.;
+			return;
+		}
+		syst->tries[REMOVE]++;
+
+		PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
+
+		double delta_E = -MC_energy(syst, p);
+		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
+
+		double pa=(acc>1 ? 1 : acc);
+
+		syst->bsus_collect[3*(syst->N-syst->N_min)+0]+=pa;
+		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
+
+		double bias=syst->bsus_pm[syst->N-syst->N_min-1]-syst->bsus_pm[syst->N-syst->N_min];
+
+		if(drand48() < exp(-bias)*acc) {
+			syst->energy += delta_E;
+			syst->N--;
+
+			// remove the particle from the old cell
+			PatchyParticle *previous = NULL;
+			PatchyParticle *current = syst->cells->heads[p->cell];
+			assert(current != NULL);
+			while(current->index != p->index) {
+				previous = current;
+				current = syst->cells->next[current->index];
+				assert(syst->cells->next[previous->index]->index == current->index);
+			}
+			if(previous == NULL) syst->cells->heads[p->cell] = syst->cells->next[p->index];
+			else syst->cells->next[previous->index] = syst->cells->next[p->index];
+
+			if(p->index != syst->N) {
+				PatchyParticle *q = syst->particles + syst->N;
+				assert(q->index != p->index);
+				// we have to change the last particle's identity
+				// first we remove it from its cell
+				previous = NULL;
+				current = syst->cells->heads[q->cell];
+				assert(current != NULL);
+				while(current->index != q->index) {
+					previous = current;
+					current = syst->cells->next[current->index];
+					assert(syst->cells->next[previous->index]->index == current->index);
+				}
+				if(previous == NULL) syst->cells->heads[q->cell] = syst->cells->next[q->index];
+				else syst->cells->next[previous->index] = syst->cells->next[q->index];
+
+				// copy its type, position and patches onto p's memory position
+				p->r[0] = q->r[0];
+				p->r[1] = q->r[1];
+				p->r[2] = q->r[2];
+
+				int i;
+				for(i = 0; i < 3; i++) {
+					memcpy(p->orientation[i], q->orientation[i], sizeof(double) * 3);
+				}
+				for(i = 0; i < p->n_patches; i++) {
+					MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+				}
+
+				// and finally add it back to its former cell
+				p->cell = q->cell;
+				syst->cells->next[p->index] = syst->cells->heads[p->cell];
+				syst->cells->heads[p->cell] = p;
+			}
+
+			syst->accepted[REMOVE]++;
+		}
+	}
+}
+
+
+void bsus_update_histo(System *syst)
+{
+
+	int histogram_size=syst->N_max-syst->N_min+1;
+
+
+	syst->bsus_pm[0]=1.0;
+
+	int i;
+
+	for (i=0;i<histogram_size;i++)
+	{
+		syst->bsus_normvec[i]=syst->bsus_collect[3*i];
+		syst->bsus_normvec[i]+=syst->bsus_collect[3*i+1];
+		syst->bsus_normvec[i]+=syst->bsus_collect[3*i+2];
+	}
+
+	for (i=0;i<histogram_size;i++)
+	{
+		if (syst->bsus_normvec[i]>0)
+		{
+			syst->bsus_tm[3*i+0]=syst->bsus_collect[3*i+0]/syst->bsus_normvec[i];
+			syst->bsus_tm[3*i+1]=syst->bsus_collect[3*i+1]/syst->bsus_normvec[i];
+			syst->bsus_tm[3*i+2]=syst->bsus_collect[3*i+2]/syst->bsus_normvec[i];
+		}
+
+	}
+
+	for (i=0;i<histogram_size-1;i++)
+	{
+		double lratio;
+		if ( (syst->bsus_tm[3*(i+1)]>0) && (syst->bsus_tm[3*i+2]>0) )
+			lratio=log(syst->bsus_tm[3*i+2]/syst->bsus_tm[3*(i+1)]);
+		else
+			lratio=0.;
+
+		syst->bsus_pm[i+1]=syst->bsus_pm[i]+lratio;
+	}
+
+}
+
+
 void MC_check_energy(System *syst, Output *IO) {
+//void check_energy(System *syst, Output *IO) {
 	int i;
 	double E = 0.;
 	syst->overlap = 0;

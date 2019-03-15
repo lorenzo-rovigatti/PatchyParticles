@@ -25,7 +25,7 @@ void output_init(input_file *input, Output *output_files) {
 	char name[512];
 	if(getInputString(input, "Log_file", name, 0) == KEY_FOUND) {
 		if(strcmp("none", name) != 0) {
-			FILE *mylog = fopen(name, "w");
+			FILE *mylog = fopen(name, "a");
 			if(mylog == NULL) output_exit(output_files, "Log file '%s' is not writable\n", name);
 			output_files->log = mylog;
 		}
@@ -76,7 +76,7 @@ void output_init(input_file *input, Output *output_files) {
 		output_files->density = fopen(name, mode);
 		if(output_files->density == NULL) output_exit(output_files, "Density file '%s' is not writable\n", name);
 
-		if(ensemble == SUS) {
+		if(ensemble == 3 || ensemble == 6 || ensemble == BSUS) {
 			getInputString(input, "Umbrella_sampling_folder", output_files->sus_folder, 1);
 			if(access(output_files->sus_folder, W_OK) != 0) {
 				output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->sus_folder);
@@ -97,6 +97,15 @@ void output_init(input_file *input, Output *output_files) {
 			output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->bonds_folder);
 		}
 	}
+
+	output_files->boxshape =NULL;
+	int changeshape=0;
+	getInputInt(input, "Lx_move", &changeshape, 0);
+	if (changeshape)
+	{
+		output_files->boxshape = fopen("boxshape.dat", mode);
+		if(output_files->boxshape == NULL) output_exit(output_files, "boxshape.dat is not writable\n");
+	}
 }
 
 void output_free(Output *output_files) {
@@ -104,6 +113,7 @@ void output_free(Output *output_files) {
 	fclose(output_files->acc);
 	if(output_files->log != stderr) fclose(output_files->log);
 	if(output_files->density != NULL) fclose(output_files->density);
+	if(output_files->boxshape != NULL) fclose(output_files->boxshape);
 }
 
 void output_print(Output *output_files, System *syst, llint step) {
@@ -120,6 +130,16 @@ void output_print(Output *output_files, System *syst, llint step) {
 	if(syst->ensemble != 0) {
 		fprintf(output_files->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
 		fflush(output_files->density);
+	}
+
+
+	/**
+	 * Print the box shape
+	 */
+	if (syst->Lx_move)
+	{
+		fprintf(output_files->boxshape, "%lld %lf %lf %lf\n",step,syst->box[0],syst->box[1],syst->box[2]);
+		fflush(output_files->boxshape);
 	}
 	
 	/**
@@ -140,13 +160,15 @@ void output_print(Output *output_files, System *syst, llint step) {
 	default:
 		break;
 	}
-	
-	/**
-	 * Print acceptances for ensemble moves (on the same line as above)
-	 */
+
+	// print acceptances for ensemble moves (on the same line as above)
 	switch (syst->ensemble) {
 	case GC:
 	case SUS:
+		fprintf(output_files->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
+		fprintf(output_files->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
+		break;
+	case BSUS:
 		fprintf(output_files->acc, " %e", syst->accepted[ADD]/ (double) syst->tries[ADD]);
 		fprintf(output_files->acc, " %e", syst->accepted[REMOVE]/ (double) syst->tries[REMOVE]);
 		break;
@@ -269,6 +291,7 @@ void output_save_to_mgl(Output *output_files, System *syst, char *name) {
 		p++;
 	}
 	fclose(out);
+
 }
 
 void output_save(Output *output_files, System *syst, llint step, char *name) {
@@ -288,7 +311,32 @@ void output_save(Output *output_files, System *syst, llint step, char *name) {
 	fclose(out);
 }
 
-void output_sus(Output *output_files, System *syst, llint step) {
+
+void output_bsus(Output *IO, System *syst, llint step) {
+	char name[512];
+	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
+	FILE *out = fopen(name, "w");
+	FILE *outlast=fopen("last_bsus.dat","w");
+	FILE *outhisto=fopen("last_bsus_collect.dat","wb");
+	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
+
+	int i;
+	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
+		// if(syst->bsus_pm[i] > 0)
+		// {
+			fprintf(out, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+			fprintf(outlast, "%d %lf\n", i + syst->N_min, syst->bsus_pm[i]);
+			fprintf(outhisto,"%lf %lf %lf\n",syst->bsus_collect[3*i],syst->bsus_collect[3*i+1],syst->bsus_collect[3*i+2]);
+		// }
+	}
+
+	fclose(out);
+	fclose(outlast);
+	fclose(outhisto);
+}
+
+/*
+void output_e_sus(Output *IO, System *syst, llint step) {
 	char name[512];
 	sprintf(name, "%s/sus-%lld.dat", output_files->sus_folder, step);
 	FILE *out = fopen(name, "w");
@@ -302,6 +350,7 @@ void output_sus(Output *output_files, System *syst, llint step) {
 
 	fclose(out);
 }
+*/
 
 void output_log_msg(Output *output_files, char *format, ...) {
 	va_list args;

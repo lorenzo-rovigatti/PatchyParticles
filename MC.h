@@ -26,6 +26,13 @@ void MC_change_volume(System *syst, Output *output_files);
 void MC_change_Lx(System *syst, Output *output_files);
 
 void MC_init(input_file *input, System *syst, Output *output_files);
+void MC_add_remove_biased(System *syst, Output *IO);
+void MC_add_remove_single_cluster(System *syst, Output *IO);
+void MC_move_rototranslate(System *syst, Output *IO);
+
+void bsus_update_histo(System *syst);
+
+void MC_init(input_file *input, System *syst, Output *IO);
 void MC_free(System *syst);
 void MC_change_cell(System *syst, PatchyParticle *p);
 void MC_check_energy(System *syst, Output *output_files);
