@@ -178,6 +178,12 @@ void output_print(Output *output_files, System *syst, llint step) {
 	default:
 		break;
 	}
+
+	if (syst->Lx_move)
+	{
+		fprintf(output_files->acc, " %e", syst->accepted[LX]/ (double) syst->tries[LX]);
+	}
+
 	
 	fprintf(output_files->acc, "\n");
 	fflush(output_files->acc);
