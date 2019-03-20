@@ -180,17 +180,19 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			getInputDouble(input, "Lyz_min", &syst->Lyz_min, 1);
 			getInputDouble(input, "Lyz_max", &syst->Lyz_max, 1);
 
-			if(syst->Lyz_min >= 1.) {
-				output_exit(output_files, "Lyz_min should be < 1\n");
+			if(syst->Lyz_min >= syst->box[1]) {
+				output_exit(output_files, "Lyz_min should be smaller than box size\n");
 			}
 
-			if(syst->Lyz_max <= 1.) {
-				output_exit(output_files, "Lyz_max should be < 1\n");
+			if(syst->Lyz_max <= syst->box[1]) {
+				output_exit(output_files, "Lyz_max should be smaller than box size\n");
 			}
-
+			
+			/* disabled relative boundaries in favor of absolute ones
 			syst->Lyz_min *= syst->box[1];
 			syst->Lyz_max *= syst->box[1];
-
+			*/
+			
 			output_log_msg(output_files, "Ly and Lz are allowed to vary between %lf and %lf\n", syst->Lyz_min, syst->Lyz_max);
 		}
 	}

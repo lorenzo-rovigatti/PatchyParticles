@@ -304,7 +304,7 @@ void output_save(Output *output_files, System *syst, llint step, char *name) {
 	FILE *out = fopen(name, "w");
 	if(out == NULL) output_exit(output_files, "File '%s' is not writable\n", name);
 
-	fprintf(out, "%lld %d %lf %lf %lf\n", step, syst->N, syst->box[0], syst->box[1], syst->box[2]);
+	fprintf(out, "%lld %d %.12lf %.12lf %.12lf\n", step, syst->N, syst->box[0], syst->box[1], syst->box[2]);
 
 	int i;
 	PatchyParticle *p = syst->particles;
