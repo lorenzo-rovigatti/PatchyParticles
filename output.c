@@ -179,8 +179,7 @@ void output_print(Output *output_files, System *syst, llint step) {
 		break;
 	}
 
-	if (syst->Lx_move)
-	{
+	if (syst->Lx_move) {
 		fprintf(output_files->acc, " %e", syst->accepted[LX]/ (double) syst->tries[LX]);
 	}
 

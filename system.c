@@ -164,12 +164,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->N_max = syst->N;
 	}
 
+	syst->Lx_move = 0;
 	if(syst->ensemble == NPT) {
 		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
 		getInputDouble(input, "P", &syst->P, 1);
 	}
 	else {
-		syst->Lx_move = 0;
 		getInputInt(input, "Lx_move", &syst->Lx_move, 0);
 		if(syst->Lx_move) {
 			if(syst->box[1] != syst->box[2]) {
