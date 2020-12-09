@@ -11,6 +11,11 @@
 avbmc *avbdata;
 
 void AVBMC_init(input_file *input, System *syst, Output *IO) {
+	double sin_theta = sin(acos(syst->kf_cosmax));
+	if(sin_theta >= 1. / (2. * (1. + syst->kf_delta))) {
+		output_exit(IO, "The AVB move cannot be used with patches that do not fulfill the single-bond-per-patch condition\n");
+	}
+
 	avbdata = malloc(sizeof(avbmc));
 
 	int numpatches = syst->n_patches;

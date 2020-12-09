@@ -60,7 +60,7 @@ void do_SUS(System *syst, Output *output_files) {
 void do_NPT(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N; i++) {
-		if(drand48() < 1./syst->N) {
+		if(drand48() < 1. / syst->N) {
 			MC_change_volume(syst, output_files);
 		}
 		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
@@ -463,7 +463,9 @@ void MC_change_volume(System *syst, Output *IO) {
 	double new_side = final_V;
 	int i = 0;
 	for(i = 0; i < 3; i++) {
-		if(i != dir) new_side /= syst->box[i];
+		if(i != dir) {
+			new_side /= syst->box[i];
+		}
 	}
 
 	syst->box[dir] = new_side;
@@ -487,7 +489,9 @@ void MC_change_volume(System *syst, Output *IO) {
 	for(i = 0; i < syst->N && !overlap_found; i++) {
 		PatchyParticle *p = syst->particles + i;
 		delta_E += MC_energy(syst, p) * 0.5;
-		if(syst->overlap) overlap_found = 1;
+		if(syst->overlap) {
+			overlap_found = 1;
+		}
 	}
 
 	double delta_V = final_V - initial_V;
