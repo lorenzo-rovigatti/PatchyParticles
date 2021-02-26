@@ -237,7 +237,11 @@ void set_orientation_around_vector(vector v, matrix orient, double t) {
 
 	int i, j;
 	matrix orient_old;
-	for(i = 0; i < 3; i++) for(j = 0; j < 3; j++) orient_old[i][j] = orient[i][j];
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) {
+			orient_old[i][j] = orient[i][j];
+		}
+	}
 	matrix_matrix_multiplication(cambiamento_base, orient_old, orient);
 }
 

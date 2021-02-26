@@ -17,20 +17,9 @@
 #include "output.h"
 #include "utils.h"
 
-void _init_tetrahedral_patches(System *syst, Output *output_files) {
-	syst->n_patches = 4;
-	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
-	double half_isqrt3 = 0.5 / sqrt(3);
-	set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3,  half_isqrt3);
-	set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
-	set_vector(syst->base_patches[2], half_isqrt3,  half_isqrt3,  half_isqrt3);
-	set_vector(syst->base_patches[3], -half_isqrt3,  half_isqrt3, -half_isqrt3);
-
+void _init_base_orient(System *syst) {
 	int i, j;
-	for(i = 0; i < syst->n_patches; i++) normalize(syst->base_patches[i]);
-
-	// now we need to initialize syst->base_orient
-	// first we initialize my_orient as the identity matrix
+	// we initialize my_orient as the identity matrix
 	// and we get -syst->base_patches[0], because the
 	// set_orientation_around_vector invert its first argument
 	matrix my_orient;
@@ -49,8 +38,70 @@ void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	// needed to transform the syst->base_patches[0] vector
 	// into the 0, 0, 1 one
 	for(i = 0; i < 3; i++) {
-		for(j = 0; j < 3; j++) syst->base_orient[i][j] = my_orient[j][i];
+		for(j = 0; j < 3; j++) {
+			syst->base_orient[i][j] = my_orient[j][i];
+		}
 	}
+}
+
+void _init_patches_from_file(input_file *input, System *syst, Output *output_files) {
+	char patch_filename[256];
+	if(getInputString(input, "Patch_file", patch_filename, 0) == KEY_NOT_FOUND) {
+		output_exit(output_files, "No patch file specified\n");
+	}
+
+	FILE *patch_file = fopen(patch_filename, "r");
+	if(patch_file == NULL) {
+		output_exit(output_files, "Patch_file '%s' is not readable\n", patch_filename);
+	}
+
+	output_log_msg(output_files, "Initialising patches from '%s'\n", patch_filename);
+
+	if(fscanf(patch_file, "%d\n", &syst->n_patches) != 1) {
+		output_exit(output_files, "The first line of the patch file should contain the number of patches\n");
+	}
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+
+	int i;
+	char myline[512];
+	for(i = 0; i < syst->n_patches; i++) {
+		char *s_res = fgets(myline, 512, patch_file);
+		if(s_res == NULL) {
+			output_exit(output_files, "The patch file should contain a line per patch, but the file seems to have only %d lines instead of %d\n", i + 1, syst->n_patches + 1);
+		}
+		if(sscanf(myline, "%lf %lf %lf\n", syst->base_patches[i], syst->base_patches[i] + 1, syst->base_patches[i] + 2) != 3) {
+			output_exit(output_files, "Line n.%d does not contain three fields\n", i + 1);
+		}
+	}
+
+	fclose(patch_file);
+
+	int normalise_patches = 1;
+	getInputInt(input, "Normalise_patches", &normalise_patches, 0);
+	if(normalise_patches) {
+		for(i = 0; i < syst->n_patches; i++) {
+			normalize(syst->base_patches[i]);
+		}
+	}
+
+	_init_base_orient(syst);
+}
+
+void _init_tetrahedral_patches(System *syst, Output *output_files) {
+	syst->n_patches = 4;
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	double half_isqrt3 = 0.5 / sqrt(3);
+	set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3, half_isqrt3);
+	set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
+	set_vector(syst->base_patches[2], half_isqrt3, half_isqrt3, half_isqrt3);
+	set_vector(syst->base_patches[3], -half_isqrt3, half_isqrt3, -half_isqrt3);
+
+	int i;
+	for(i = 0; i < syst->n_patches; i++) {
+		normalize(syst->base_patches[i]);
+	}
+
+	_init_base_orient(syst);
 }
 
 void system_init(input_file *input, System *syst, Output *output_files) {
@@ -66,9 +117,6 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	char name[256];
 	getInputString(input, "Initial_conditions_file", name, 1);
 
-	char bsus_name[256];
-	int bsus_value=getInputString(input, "Initial_bsus_file", bsus_name, 0);
-
 	if(getInputInt(input, "Seed", &syst->seed, 0) == KEY_NOT_FOUND) {
 		syst->seed = time(NULL);
 		output_log_msg(output_files, "Using seed %d\n", syst->seed);
@@ -76,7 +124,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	srand48(syst->seed);
 
 	FILE *conf = fopen(name, "r");
-	if(conf == NULL) output_exit(output_files, "Initial_conditions_file '%s' is not readable\n", name);
+	if(conf == NULL) {
+		output_exit(output_files, "Initial_conditions_file '%s' is not readable\n", name);
+	}
 
 	res = fscanf(conf, "%*d %d %lf %lf %lf\n", &syst->N, syst->box, syst->box + 1, syst->box + 2);
 	if(res != 4) output_exit(output_files, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
@@ -98,58 +148,66 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		case SUS:
 			getInputInt(input, "Umbrella_sampling_min", &syst->N_min, 1);
 			getInputInt(input, "Umbrella_sampling_max", &syst->N_max, 1);
-			if(syst->N < syst->N_min) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
-			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			if(syst->N < syst->N_min) {
+				output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
+			}
+
+			if(syst->N > syst->N_max) {
+				output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			}
+
 			syst->SUS_hist = calloc(syst->N_max - syst->N_min + 1, sizeof(llint));
 			break;
 		case BSUS:
-
 			getInputInt(input, "Umbrella_sampling_min", &syst->N_min, 1);
 			getInputInt(input, "Umbrella_sampling_max", &syst->N_max, 1);
-			if(syst->N < syst->N_min) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
-			if(syst->N > syst->N_max) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			if(syst->N < syst->N_min) {
+				output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->N_min);
+			}
 
-			int transition_size=3*(syst->N_max-syst->N_min+1);
-			int histogram_size=syst->N_max-syst->N_min+1;
+			if(syst->N > syst->N_max) {
+				output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->N_max);
+			}
 
-			syst->bsus_collect=calloc(transition_size,sizeof(double));
-			syst->bsus_tm=calloc(transition_size,sizeof(double));
-			syst->bsus_normvec=calloc(histogram_size,sizeof(double));
-			syst->bsus_pm=calloc(histogram_size,sizeof(double));
+			int transition_size = 3 * (syst->N_max - syst->N_min + 1);
+			int histogram_size = syst->N_max - syst->N_min + 1;
 
-			if (bsus_value!=KEY_NOT_FOUND)
-			{
-				FILE *bsus_file=fopen(bsus_name,"rb");
+			syst->bsus_collect = calloc(transition_size, sizeof(double));
+			syst->bsus_tm = calloc(transition_size, sizeof(double));
+			syst->bsus_normvec = calloc(histogram_size, sizeof(double));
+			syst->bsus_pm = calloc(histogram_size, sizeof(double));
 
-				if (bsus_file)
-				{
+			char bsus_name[256];
+			int bsus_value = getInputString(input, "Initial_bsus_file", bsus_name, 0);
+			if(bsus_value != KEY_NOT_FOUND) {
+				FILE *bsus_file = fopen(bsus_name, "rb");
+
+				if(bsus_file) {
 					output_log_msg(output_files, "Reading initial BSUS collection matrix\n");
 
 					char myline[512];
-					int p=0;
+					int p = 0;
 					char *s_res = fgets(myline, 512, bsus_file);
 					while(s_res != NULL) {
-						sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect+3*p,syst->bsus_collect+3*p+1,syst->bsus_collect+3*p+2);
-						output_log_msg(output_files, "%lf %lf %lf\n",syst->bsus_collect[3*p],syst->bsus_collect[3*p+1],syst->bsus_collect[3*p+2]);
+						sscanf(myline, "%lf %lf %lf\n", syst->bsus_collect + 3 * p, syst->bsus_collect + 3 * p + 1, syst->bsus_collect + 3 * p + 2);
+						output_log_msg(output_files, "%lf %lf %lf\n", syst->bsus_collect[3 * p], syst->bsus_collect[3 * p + 1], syst->bsus_collect[3 * p + 2]);
 
 						p++;
 
 						s_res = fgets(myline, 512, bsus_file);
 					}
 
-					assert(p==histogram_size);
+					assert(p == histogram_size);
 
 					fclose(bsus_file);
 
 					bsus_update_histo(syst);
 				}
-				else
-				{
+				else {
 					output_log_msg(output_files, "No initial BSUS collection matrix found\n");
 				}
 			}
-			else
-			{
+			else {
 				output_log_msg(output_files, "No initial BSUS collection matrix declared\n");
 			}
 
@@ -187,7 +245,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			if(syst->Lyz_max <= syst->box[1]) {
 				output_exit(output_files, "Lyz_max should be larger than the box size\n");
 			}
-			
+
 			output_log_msg(output_files, "Ly and Lz are allowed to vary between %lf and %lf\n", syst->Lyz_min, syst->Lyz_max);
 		}
 	}
@@ -197,7 +255,15 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	_init_tetrahedral_patches(syst, output_files);
+	int use_patch_file = 0;
+	getInputInt(input, "Use_patch_file", &use_patch_file, 0);
+
+	if(use_patch_file) {
+		_init_patches_from_file(input, syst, output_files);
+	}
+	else {
+		_init_tetrahedral_patches(syst, output_files);
+	}
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
@@ -216,7 +282,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		res = fscanf(conf, "%lf %lf %lf\n", p2, p2 + 1, p2 + 2);
 
 		PatchyParticle *p = syst->particles + i;
-		res = fscanf(conf, "%lf %lf %lf\n", p->r, p->r+1, p->r+2);
+		res = fscanf(conf, "%lf %lf %lf\n", p->r, p->r + 1, p->r + 2);
 
 		// normalize the orientation matrix
 		normalize(p1);
@@ -239,7 +305,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		s_res = fgets(myline, 512, conf);
 	}
 	fclose(conf);
-	if(i != syst->N) output_exit(output_files, "Number of particles found in configuration (%d) is different from the value found in the header (%d)\n", i, syst->N);
+	if(i != syst->N) {
+		output_exit(output_files, "Number of particles found in configuration (%d) is different from the value found in the header (%d)\n", i, syst->N);
+	}
 
 	utils_reset_acceptance_counters(syst);
 
@@ -263,7 +331,7 @@ void system_free(System *syst) {
 	free(syst->particles);
 	if(syst->ensemble == SUS) free(syst->SUS_hist);
 
-	if (syst->ensemble==BSUS)
+	if(syst->ensemble == BSUS)
 	{
 		free(syst->bsus_collect);
 		free(syst->bsus_tm);
