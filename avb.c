@@ -11,8 +11,11 @@
 avbmc *avbdata;
 
 void AVBMC_init(input_file *input, System *syst, Output *IO) {
-	double sin_theta = sin(acos(syst->kf_cosmax));
-	if(sin_theta >= 1. / (2. * (1. + syst->kf_delta))) {
+	double delta = syst->kf_delta[0];
+	double cosmax = syst->kf_cosmax[0];
+
+	double sin_theta = sin(acos(cosmax));
+	if(sin_theta >= 1. / (2. * (1. + delta))) {
 		output_exit(IO, "The AVB move cannot be used with patches that do not fulfill the single-bond-per-patch condition\n");
 	}
 
@@ -23,7 +26,7 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 	avbdata->neighbours = malloc(numpatches * sizeof(PatchyParticle*));
 	avbdata->num_neighbours = 0;
 
-	avbdata->avb_vin = syst->n_patches * syst->n_patches * (M_PI * (syst->kf_delta * syst->kf_delta * syst->kf_delta + 3. * SQR(syst->kf_delta) + 3. * syst->kf_delta) * SQR(1. - syst->kf_cosmax) / 3.);
+	avbdata->avb_vin = syst->n_patches * syst->n_patches * (M_PI * (delta * delta * delta + 3. * SQR(delta) + 3. * delta) * SQR(1. - cosmax) / 3.);
 
 	output_log_msg(IO, "Vavb = %lf\n", avbdata->avb_vin);
 

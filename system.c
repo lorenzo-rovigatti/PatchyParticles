@@ -44,37 +44,104 @@ void _init_base_orient(System *syst) {
 	}
 }
 
-void _init_patches_from_file(input_file *input, System *syst, Output *output_files) {
+void _init_patches(input_file *input, System *syst, Output *output_files) {
 	char patch_filename[256];
-	if(getInputString(input, "Patch_file", patch_filename, 0) == KEY_NOT_FOUND) {
-		output_exit(output_files, "No patch file specified\n");
-	}
-
-	FILE *patch_file = fopen(patch_filename, "r");
-	if(patch_file == NULL) {
-		output_exit(output_files, "Patch_file '%s' is not readable\n", patch_filename);
-	}
-
-	output_log_msg(output_files, "Initialising patches from '%s'\n", patch_filename);
-
-	if(fscanf(patch_file, "%d\n", &syst->n_patches) != 1) {
-		output_exit(output_files, "The first line of the patch file should contain the number of patches\n");
-	}
-	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
-
+	FILE *patch_file;
 	int i;
-	char myline[512];
-	for(i = 0; i < syst->n_patches; i++) {
-		char *s_res = fgets(myline, 512, patch_file);
-		if(s_res == NULL) {
-			output_exit(output_files, "The patch file should contain a line per patch, but the file seems to have only %d lines instead of %d\n", i + 1, syst->n_patches + 1);
+
+	double base_kf_delta, base_kf_cosmax;
+
+	getInputDouble(input, "KF_delta", &base_kf_delta, 1);
+	getInputDouble(input, "KF_cosmax", &base_kf_cosmax, 1);
+
+	int use_patch_file = 0;
+	getInputInt(input, "Use_patch_file", &use_patch_file, 0);
+
+	if(use_patch_file) {
+		if(getInputString(input, "Patch_file", patch_filename, 0) == KEY_NOT_FOUND) {
+			output_exit(output_files, "No patch file specified\n");
 		}
-		if(sscanf(myline, "%lf %lf %lf\n", syst->base_patches[i], syst->base_patches[i] + 1, syst->base_patches[i] + 2) != 3) {
-			output_exit(output_files, "Line n.%d does not contain three fields\n", i + 1);
+
+		patch_file = fopen(patch_filename, "r");
+		if(patch_file == NULL) {
+			output_exit(output_files, "Patch_file '%s' is not readable\n", patch_filename);
+		}
+
+		output_log_msg(output_files, "Initialising patches from '%s'\n", patch_filename);
+
+		if(fscanf(patch_file, "%d\n", &syst->n_patches) != 1) {
+			output_exit(output_files, "The first line of the patch file should contain the number of patches\n");
 		}
 	}
+	else {
+		syst->n_patches = 4;
+	}
 
-	fclose(patch_file);
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	syst->kf_cosmax = malloc(sizeof(vector) * syst->n_patches);
+	syst->kf_delta = malloc(sizeof(vector) * SQR(syst->n_patches));
+	syst->kf_interaction_matrix = malloc(sizeof(double) * SQR(syst->n_patches));
+	// by default all patch-patch interactions are allowed, their depth is 1 and their KF parameters are the base ones
+	for(i = 0; i < SQR(syst->n_patches); i++) {
+		syst->kf_interaction_matrix[i] = 1;
+		syst->kf_delta[i] = base_kf_delta;
+	}
+
+	for(i = 0; i < syst->n_patches; i++) {
+		syst->kf_cosmax[i] = base_kf_cosmax;
+	}
+
+	if(use_patch_file) {
+		char myline[512];
+		for(i = 0; i < syst->n_patches; i++) {
+			char *s_res = fgets(myline, 512, patch_file);
+			if(s_res == NULL) {
+				output_exit(output_files, "The patch file should contain a line per patch, but the file seems to have only %d lines instead of %d\n", i + 1, syst->n_patches + 1);
+			}
+			if(sscanf(myline, "%lf %lf %lf\n", syst->base_patches[i], syst->base_patches[i] + 1, syst->base_patches[i] + 2) != 3) {
+				output_exit(output_files, "Line n.%d does not contain three fields\n", i + 1);
+			}
+		}
+		fclose(patch_file);
+
+		// check for overrides to the interaction matrix and to the KF parameters
+		int j;
+		input_file patch_input_file;
+		loadInputFile(&patch_input_file, patch_filename, 0);
+		for(i = 0; i < syst->n_patches; i++) {
+			double value;
+			char key[512];
+
+			for(j = 0; j < syst->n_patches; j++) {
+				// patch-patch well depth
+				sprintf(key, "epsilon[%d][%d]", i, j);
+				if(getInputDouble(&patch_input_file, key, &value, 0) == KEY_FOUND) {
+					syst->kf_interaction_matrix[i + syst->n_patches * j] = syst->kf_interaction_matrix[j + syst->n_patches * i] = value;
+				}
+				// patch-patch range
+				sprintf(key, "KF_delta[%d][%d]", i, j);
+				if(getInputDouble(&patch_input_file, key, &value, 0) == KEY_FOUND) {
+					syst->kf_delta[P_IDX(i, j)] = syst->kf_delta[P_IDX(j, i)] = value;
+				}
+			}
+
+			// patch angular width
+			sprintf(key, "KF_cosmax[%d]", i);
+			if(getInputDouble(&patch_input_file, key, &value, 0) == KEY_FOUND) {
+				syst->kf_cosmax[i] = value;
+			}
+		}
+		cleanInputFile(&patch_input_file);
+	}
+	else {
+		double half_isqrt3 = 0.5 / sqrt(3);
+		set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3, half_isqrt3);
+		set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
+		set_vector(syst->base_patches[2], half_isqrt3, half_isqrt3, half_isqrt3);
+		set_vector(syst->base_patches[3], -half_isqrt3, half_isqrt3, -half_isqrt3);
+
+		output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax[0], syst->kf_delta[0]);
+	}
 
 	int normalise_patches = 1;
 	getInputInt(input, "Normalise_patches", &normalise_patches, 0);
@@ -82,23 +149,6 @@ void _init_patches_from_file(input_file *input, System *syst, Output *output_fil
 		for(i = 0; i < syst->n_patches; i++) {
 			normalize(syst->base_patches[i]);
 		}
-	}
-
-	_init_base_orient(syst);
-}
-
-void _init_tetrahedral_patches(System *syst, Output *output_files) {
-	syst->n_patches = 4;
-	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
-	double half_isqrt3 = 0.5 / sqrt(3);
-	set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3, half_isqrt3);
-	set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
-	set_vector(syst->base_patches[2], half_isqrt3, half_isqrt3, half_isqrt3);
-	set_vector(syst->base_patches[3], -half_isqrt3, half_isqrt3, -half_isqrt3);
-
-	int i;
-	for(i = 0; i < syst->n_patches; i++) {
-		normalize(syst->base_patches[i]);
 	}
 
 	_init_base_orient(syst);
@@ -129,14 +179,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	}
 
 	res = fscanf(conf, "%*d %d %lf %lf %lf\n", &syst->N, syst->box, syst->box + 1, syst->box + 2);
-	if(res != 4) output_exit(output_files, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
-
-	getInputDouble(input, "KF_delta", &syst->kf_delta, 1);
-	getInputDouble(input, "KF_cosmax", &syst->kf_cosmax, 1);
-
-	syst->kf_sqr_rcut = SQR(1. + syst->kf_delta);
-
-	output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax, syst->kf_delta);
+	if(res != 4) {
+		output_exit(output_files, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
+	}
 
 	if(syst->ensemble == SUS || syst->ensemble == GC || syst->ensemble == BSUS) {
 		getInputDouble(input, "Activity", &syst->z, 1);
@@ -255,15 +300,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	int use_patch_file = 0;
-	getInputInt(input, "Use_patch_file", &use_patch_file, 0);
-
-	if(use_patch_file) {
-		_init_patches_from_file(input, syst, output_files);
-	}
-	else {
-		_init_tetrahedral_patches(syst, output_files);
-	}
+	_init_patches(input, syst, output_files);
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
@@ -311,7 +348,15 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	utils_reset_acceptance_counters(syst);
 
-	syst->r_cut = 1. + syst->kf_delta;
+	syst->r_cut = 0.;
+	for(i = 0; i < SQR(syst->n_patches); i++) {
+		double new_r_cut = 1. + syst->kf_delta[i];
+		if(new_r_cut > syst->r_cut) {
+			syst->r_cut = new_r_cut;
+		}
+	}
+	syst->sqr_rcut = SQR(syst->r_cut);
+
 	cells_init(syst, output_files, syst->r_cut);
 	cells_fill(syst);
 }
@@ -320,7 +365,12 @@ void system_free(System *syst) {
 	cells_free(syst->cells);
 
 	int i;
-	if(syst->base_patches != NULL) free(syst->base_patches);
+	if(syst->base_patches != NULL) {
+		free(syst->base_patches);
+		free(syst->kf_cosmax);
+		free(syst->kf_delta);
+		free(syst->kf_interaction_matrix);
+	}
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		if(p->patches != NULL) {
@@ -329,10 +379,11 @@ void system_free(System *syst) {
 	}
 
 	free(syst->particles);
-	if(syst->ensemble == SUS) free(syst->SUS_hist);
 
-	if(syst->ensemble == BSUS)
-	{
+	if(syst->ensemble == SUS) {
+		free(syst->SUS_hist);
+	}
+	else if(syst->ensemble == BSUS) {
 		free(syst->bsus_collect);
 		free(syst->bsus_tm);
 		free(syst->bsus_normvec);

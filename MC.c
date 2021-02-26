@@ -238,7 +238,7 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 	double dist2 = SCALAR(dist, dist);
 
 	if(dist2 < 1.) return OVERLAP;
-	else if(dist2 < syst->kf_sqr_rcut) {
+	else if(dist2 < syst->sqr_rcut) {
 		// versor
 		double norm = sqrt(dist2);
 		dist[0] /= norm;
@@ -249,10 +249,12 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 		for(pp = 0; pp < syst->n_patches; pp++) {
 			double p_cos = SCALAR(dist, p->patches[pp]);
 
-			if(p_cos > syst->kf_cosmax) {
+			if(p_cos > syst->kf_cosmax[pp]) {
 				for(pq = 0; pq < syst->n_patches; pq++) {
 					double q_cos = -SCALAR(dist, patches[pq]);
-					if(q_cos > syst->kf_cosmax) {
+
+					double threshold_sqr = SQR(1. + syst->kf_delta[P_IDX(pp, pq)]);
+					if(q_cos > syst->kf_cosmax[pq] && dist2 < threshold_sqr) {
 						*onp = pp;
 						*onq = pq;
 						return PATCH_BOND;
@@ -292,7 +294,7 @@ double MC_energy(System *syst, PatchyParticle *p) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
 						if(val == PATCH_BOND) {
-							E -= 1.;
+							E -= syst->kf_interaction_matrix[P_IDX(p_patch, q_patch)];
 						}
 						else if(val == OVERLAP) {
 							syst->overlap = 1;

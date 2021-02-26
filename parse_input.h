@@ -30,8 +30,8 @@ typedef struct input_file {
 	input_string *unread_keys;
 } input_file;
 
-void loadInputFile(input_file *inp, const char *filename);
-void loadInput(input_file *inp, FILE * desc);
+void loadInputFile(input_file *inp, const char *filename, int warn_if_malformed);
+void loadInput(input_file *inp, FILE *desc, int warn_if_malformed);
 
 int getInputKeyIndex(input_file *inp, const char *skey, int mandatory);
 int getInputString(input_file *inp, const char *skey, char *dest, int mandatory);

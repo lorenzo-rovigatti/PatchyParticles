@@ -15,19 +15,19 @@ void getTrimmedString(const char *src, char *dest) {
 	dest[end+1] = '\0';
 }
 
-void loadInputFile(input_file *inp, const char *filename) {
+void loadInputFile(input_file *inp, const char *filename, int warn_if_malformed) {
 	FILE *inp_file = fopen(filename, "r");
 	if(inp_file == NULL) {
 	fprintf(stderr, "Input file not found\n");
 		inp->state = ERROR;
 		return;
 	}
-	loadInput (inp, inp_file);
-	fclose (inp_file);
+	loadInput(inp, inp_file, warn_if_malformed);
+	fclose(inp_file);
 	return;
 }
 
-void loadInput(input_file *inp, FILE * inp_file) {
+void loadInput(input_file *inp, FILE *inp_file, int warn_if_malformed) {
 	int eof, i;
 	size_t alloc_size;
 	char *delim, *option = NULL;
@@ -55,7 +55,9 @@ void loadInput(input_file *inp, FILE * inp_file) {
 		if(strlen(t_option) > 0 && t_option[0] != '#') {
 			delim = strchr(t_option, '=');
 			if(delim == NULL) {
-				fprintf(stderr, "WARNING: malformed line '%s'\n", option);
+				if(warn_if_malformed) {
+					fprintf(stderr, "WARNING: malformed line '%s'\n", option);
+				}
 				free(option);
 				option = NULL;
 				continue;

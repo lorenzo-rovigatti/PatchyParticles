@@ -8,11 +8,9 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#define COS120 -0.5
-#define SIN120 0.8660254037844386
-
 #define SQR(x) ((x) * (x))
 #define SCALAR(x, y) ((x)[0]*(y)[0] + (x)[1]*(y)[1] + (x)[2]*(y)[2])
+#define P_IDX(pp, pq) ((pp) + (pq) * syst->n_patches)
 
 #define MATRIX_VECTOR_MULTIPLICATION(m, v, result) {\
 	(result)[0] = (m)[0][0]*(v)[0] + (m)[0][1]*(v)[1] + (m)[0][2]*(v)[2];\

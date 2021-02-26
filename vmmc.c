@@ -69,11 +69,11 @@ void _restore_dof(PatchyParticle * p) {
 	}
 }
 
-double _pair_energy(System * syst, PatchyParticle *p, PatchyParticle *q) {
+double _pair_energy(System *syst, PatchyParticle *p, PatchyParticle *q) {
 	int p_patch, q_patch;
 	int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 	if(val == PATCH_BOND) {
-		return -1.;
+		return -syst->kf_interaction_matrix[P_IDX(p_patch, q_patch)];
 	}
 	else if(val == OVERLAP) {
 		syst->overlap = 1;
@@ -86,10 +86,10 @@ double _pair_energy(System * syst, PatchyParticle *p, PatchyParticle *q) {
 
 // TODO: maybe the following function can be avoided
 int _mycomp(const void *p, const void * q, void * s) {
-	PatchyParticle * a = *(PatchyParticle **) p;
-	PatchyParticle * b = *((PatchyParticle **) p + 1);
-	PatchyParticle * c = *(PatchyParticle **) q;
-	PatchyParticle * d = *((PatchyParticle **) q + 1);
+	PatchyParticle *a = *(PatchyParticle **) p;
+	PatchyParticle *b = *((PatchyParticle **) p + 1);
+	PatchyParticle *c = *(PatchyParticle **) q;
+	PatchyParticle *d = *((PatchyParticle **) q + 1);
 	int idx1 = a->index * ((System *) s)->N + b->index;
 	int idx2 = c->index * ((System *) s)->N + d->index;
 	return idx1 - idx2;
@@ -156,7 +156,7 @@ void _populate_possible_links(System *syst, Output *output_files, PatchyParticle
 						dist[2] -= syst->box[2] * rint(dist[2] / syst->box[2]);
 						double dist2 = SCALAR(dist, dist);
 
-						if(dist2 < syst->kf_sqr_rcut) {
+						if(dist2 < syst->sqr_rcut) {
 							// check that we have not exhausted the memory
 							if(vmmcdata->n_possible_links >= 16 * syst->N_max) output_exit(output_files, "VMMC: memory exhausted");
 							// add to list if entry does not exist

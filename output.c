@@ -287,10 +287,10 @@ void output_save_to_mgl(Output *output_files, System *syst, char *name) {
 		int j;
 		for(j = 0; j < syst->n_patches; j++) {
 			vector patch;
-			patch[0] = (0.5+syst->kf_delta)*p->patches[j][0];
-			patch[1] = (0.5+syst->kf_delta)*p->patches[j][1];
-			patch[2] = (0.5+syst->kf_delta)*p->patches[j][2];
-			fprintf(out, " %lf %lf %lf %lf", patch[0], patch[1], patch[2], acos(syst->kf_cosmax));
+			patch[0] = (0.5 + syst->kf_delta[0]) * p->patches[j][0];
+			patch[1] = (0.5 + syst->kf_delta[0]) * p->patches[j][1];
+			patch[2] = (0.5 + syst->kf_delta[0]) * p->patches[j][2];
+			fprintf(out, " %lf %lf %lf %lf", patch[0], patch[1], patch[2], acos(syst->kf_cosmax[j]));
 			fprintf(out, " C[0.392157,0.584314,0.929412,1]");
 		}
 		fprintf(out, "\n");

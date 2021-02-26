@@ -101,8 +101,9 @@ typedef struct System {
 	double Lyz_min;
 	double Lyz_max;
 
-	double kf_delta, kf_cosmax, kf_sqr_rcut;
-	double r_cut;
+	double *kf_delta, *kf_cosmax;
+	double *kf_interaction_matrix;
+	double r_cut, sqr_rcut;
 
 	Cells *cells;
 

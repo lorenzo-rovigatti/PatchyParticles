@@ -50,6 +50,9 @@ void get_perpendicular_versor(vector v, vector res) {
 }
 
 void place_inside_vbonding(System *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch) {
+	double delta = syst->kf_delta[0];
+	double cosmax = syst->kf_cosmax[0];
+
 	utils_rotate_matrix(syst->base_orient, orient, syst->base_patches[0], 2*drand48()*M_PI);
 
 	vector target_patch_dir;
@@ -59,16 +62,16 @@ void place_inside_vbonding(System *syst, PatchyParticle *rec, vector r, matrix o
 	get_perpendicular_versor(target_patch_dir, norm_vect);
 
 	// choose a new direction
-	double theta = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
+	double theta = acos(cosmax + (1. - cosmax) * drand48());
 	rotate_vector(target_patch_dir, norm_vect, theta);
 	normalize(target_patch_dir);
 
 	// another random angle
-	double theta2 = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
+	double theta2 = acos(cosmax + (1. -cosmax) * drand48());
 	set_orientation_around_vector(target_patch_dir, orient, theta2);
 
 	// choose the distance
-	double dist = pow(1. + drand48()*(syst->kf_delta*syst->kf_delta*syst->kf_delta + 3.*SQR(syst->kf_delta) + 3.*syst->kf_delta), 1. / 3.);
+	double dist = pow(1. + drand48() * (delta * delta * delta + 3. * SQR(delta) + 3. * delta), 1. / 3.);
 
 	r[0] = target_patch_dir[0]*dist + rec->r[0];
 	r[1] = target_patch_dir[1]*dist + rec->r[1];

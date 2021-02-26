@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	 * Initialise the data structures
 	 */
 	input_file input;
-	loadInputFile(&input, argv[1]);
+	loadInputFile(&input, argv[1], 1);
 	if(input.state == ERROR) exit(1);
 	System syst;
 	output_init(&input, &output_files);
