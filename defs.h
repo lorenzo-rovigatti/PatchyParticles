@@ -89,7 +89,6 @@ typedef struct System {
 	double *bsus_normvec;
 	double *bsus_pm;
 	
-	
 	int overlap;
 
 	int tries[N_MOVES];

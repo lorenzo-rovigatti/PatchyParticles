@@ -247,7 +247,9 @@ void output_print_bonds(Output *output_files, System *syst, char *name) {
 							 */
 							if(val == PATCH_BOND) {
 								p_n_bonds++;
-								sprintf(bond_line, "%s%d ", bond_line, q->index);
+								char bond_bit[32];
+								sprintf(bond_bit, "%d ", q->index);
+								strncat(bond_line, bond_bit, 511);
 							}
 						}
 						q = syst->cells->next[q->index];
@@ -318,7 +320,7 @@ void output_save(Output *output_files, System *syst, llint step, char *name) {
 
 
 void output_bsus(Output *IO, System *syst, llint step) {
-	char name[512];
+	char name[1024];
 	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
 	FILE *out = fopen(name, "w");
 	FILE *outlast=fopen("last_bsus.dat","w");
