@@ -28,9 +28,16 @@
 #define VMMC 1
 #define AVBMC 2
 
-#define OVERLAP -1
-#define NO_BOND 0
-#define PATCH_BOND 1
+#define OVERLAP (1 << 0) 	// 1
+#define NO_BOND (1 << 1) 	// 2
+#define PATCH_BOND (1 << 2) // 4
+#define REPULSION (1 << 3)	// 8
+
+// we may need these later on
+//#define SET_FLAG(n, f) ((n) |= (f))
+//#define CLR_FLAG(n, f) ((n) &= ~(f))
+//#define TGL_FLAG(n, f) ((n) ^= (f))
+//#define CHK_FLAG(n, f) ((n) & (f))
 
 #include "cells.h"
 
@@ -104,6 +111,8 @@ typedef struct System {
 	double *kf_delta, *kf_cosmax;
 	double *kf_interaction_matrix;
 	double r_cut, sqr_rcut;
+
+	double shoulder_width, shoulder_rcut_sqr, shoulder_height;
 
 	Cells *cells;
 

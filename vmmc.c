@@ -72,16 +72,19 @@ void _restore_dof(PatchyParticle * p) {
 double _pair_energy(System *syst, PatchyParticle *p, PatchyParticle *q) {
 	int p_patch, q_patch;
 	int val = MC_interact(syst, p, q, &p_patch, &q_patch);
-	if(val == PATCH_BOND) {
-		return -syst->kf_interaction_matrix[P_IDX(p_patch, q_patch)];
-	}
-	else if(val == OVERLAP) {
+	if(val == OVERLAP) {
 		syst->overlap = 1;
 		return 0.;
 	}
-	else {
-		return 0.;
+
+	if(val == PATCH_BOND) {
+		return -syst->kf_interaction_matrix[P_IDX(p_patch, q_patch)];
 	}
+	else if(val == REPULSION) {
+		return syst->shoulder_height;
+	}
+
+	return 0.;
 }
 
 // TODO: maybe the following function can be avoided

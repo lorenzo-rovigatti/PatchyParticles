@@ -237,7 +237,9 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 
 	double dist2 = SCALAR(dist, dist);
 
-	if(dist2 < 1.) return OVERLAP;
+	if(dist2 < 1.) {
+		return OVERLAP;
+	}
 	else if(dist2 < syst->sqr_rcut) {
 		// versor
 		double norm = sqrt(dist2);
@@ -261,6 +263,10 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 					}
 				}
 			}
+		}
+
+		if(dist2 < syst->shoulder_rcut_sqr) {
+			return REPULSION;
 		}
 	}
 
@@ -293,12 +299,16 @@ double MC_energy(System *syst, PatchyParticle *p) {
 					if(q->index != p->index) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
+						if(val == OVERLAP) {
+							syst->overlap = 1;
+							return 0.;
+						}
+
 						if(val == PATCH_BOND) {
 							E -= syst->kf_interaction_matrix[P_IDX(p_patch, q_patch)];
 						}
-						else if(val == OVERLAP) {
-							syst->overlap = 1;
-							return 0.;
+						else if(val == REPULSION) {
+							E += syst->shoulder_height;
 						}
 					}
 					q = syst->cells->next[q->index];

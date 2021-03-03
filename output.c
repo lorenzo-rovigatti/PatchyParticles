@@ -241,10 +241,8 @@ void output_print_bonds(Output *output_files, System *syst, char *name) {
 						if(q->index != p->index) {
 							int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
-							/**
-							 * If p and q are bonded, we increase p's bonding counter and update the string containing the indexes
-							 * of the particles p is bonded with
-							 */
+//							If p and q are bonded, we increase p's bonding counter and update the string containing the indexes
+//							of the particles p is bonded with
 							if(val == PATCH_BOND) {
 								p_n_bonds++;
 								char bond_bit[32];
@@ -258,10 +256,8 @@ void output_print_bonds(Output *output_files, System *syst, char *name) {
 			}
 		}
 
-		/**
-		 * Print two lines per particle. The first one contains p's index and the number of its bonded neighbours
-		 * The second one is just the list of p's bonded neighbours. It might be empty
-		 */
+//		Print two lines per particle. The first one contains p's index and the number of its bonded neighbours
+//		The second one is just the list of p's bonded neighbours. It might be empty
 		fprintf(out, "%d %d\n", p->index, p_n_bonds);
 		fprintf(out, "%s\n", bond_line);
 	}

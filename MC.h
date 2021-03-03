@@ -10,6 +10,8 @@
 
 #include "defs.h"
 
+#include <stdint.h>
+
 typedef struct input_file input_file;
 
 void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);

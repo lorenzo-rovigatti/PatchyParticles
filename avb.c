@@ -118,7 +118,7 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
-			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
+			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) ==PATCH_BOND);
 #endif
 
 			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * avbdata->avb_vin / ((avbdata->num_neighbours + 1.) * avbdata->avb_vout);
