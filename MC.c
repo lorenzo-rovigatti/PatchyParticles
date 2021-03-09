@@ -255,24 +255,25 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 
 			if(p_cos > syst->kf_cosmax[pp]) {
 				for(pq = 0; pq < syst->n_patches; pq++) {
-					double q_cos = -SCALAR(dist, patches[pq]);
+					if(syst->kf_interaction_matrix[P_IDX(pp, pq)] != 0.) {
+						double q_cos = -SCALAR(dist, patches[pq]);
 
-					double threshold_sqr = SQR(1. + syst->kf_delta[P_IDX(pp, pq)]);
-					if(q_cos > syst->kf_cosmax[pq]) {
-						if(syst->kf_interaction_matrix[P_IDX(pp, pq)] != 0.) {
+						double threshold_sqr = SQR(1. + syst->kf_delta[P_IDX(pp, pq)]);
+						if(q_cos > syst->kf_cosmax[pq]) {
 							correct_orientation = 1;
-						}
-						if(dist2 < threshold_sqr) {
-							*onp = pp;
-							*onq = pq;
-							return PATCH_BOND;
+
+							if(dist2 < threshold_sqr) {
+								*onp = pp;
+								*onq = pq;
+								return PATCH_BOND;
+							}
 						}
 					}
 				}
 			}
 		}
 
-		if(dist2 < syst->shoulder_rcut_sqr && !correct_orientation) {
+		if(dist2 < syst->shoulder_rcut_sqr && (!correct_orientation || !syst->shoulder_lr_model)) {
 			return REPULSION;
 		}
 	}

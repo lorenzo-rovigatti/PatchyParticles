@@ -40,6 +40,9 @@ void output_init(input_file *input, Output *output_files) {
 	else {
 		getInputString(input, "Initial_conditions_file", name, 1);
 		FILE *conf = fopen(name, "r");
+		if(conf == NULL) {
+			output_exit(output_files, "Initial_conditions_file '%s' is not readable\n", name);
+		}
 		int res = fscanf(conf, "%lld %*d %*f %*f %*f\n", &output_files->start_from);
 		if(res != 1) output_exit(output_files, "Invalid initial configuration: the first value in the first row should be the time step of the configuration");
 		fclose(conf);
