@@ -151,15 +151,6 @@ void _init_patches(input_file *input, System *syst, Output *output_files) {
 		}
 	}
 
-	// we now add the (optional) shoulder height to all the interactions, unless the user explicitly tells us not to
-//	int shift_matrix = 1;
-//	getInputInt(input, "Shift_interaction_matrix", &shift_matrix, 0);
-//	if(shift_matrix) {
-//		for(i = 0; i < SQR(syst->n_patches); i++) {
-//			syst->kf_interaction_matrix[i] += syst->shoulder_height;
-//		}
-//	}
-
 	_init_base_orient(syst);
 }
 
@@ -313,6 +304,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	getInputDouble(input, "Repulsive_shoulder_width", &syst->shoulder_width, 0);
 	getInputDouble(input, "Repulsive_shoulder_height", &syst->shoulder_height, 0);
 	syst->shoulder_rcut_sqr = SQR(1. + syst->shoulder_width);
+
+	syst->shoulder_lr_model = 0;
+	getInputInt(input, "Repulsive_LR_model", &syst->shoulder_lr_model, 0);
 
 	_init_patches(input, syst, output_files);
 	for(i = 0; i < syst->N_max; i++) {

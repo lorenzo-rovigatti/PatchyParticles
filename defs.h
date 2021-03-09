@@ -112,6 +112,7 @@ typedef struct System {
 	double *kf_interaction_matrix;
 	double r_cut, sqr_rcut;
 
+	int shoulder_lr_model;
 	double shoulder_width, shoulder_rcut_sqr, shoulder_height;
 
 	Cells *cells;

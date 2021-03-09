@@ -107,7 +107,39 @@ The code is commented lightly. However, we have tried to highlight what is done 
 * The `utils.c, utils.h` pair contains commonly-used functions to work with vectors and matrices.
 * The `system.c, system.h` pair contains the functions used to initialise and cleanup the main data structure (`System`).
 * The `output.c, output.h` pair contains the functions used to initialise and cleanup the data structure responsible for printing the output (`Output`), as well as the functions that actually print most of the output.
-* The `parse_input.c, parse_input.h` pair contains the data structures, logic and functions used by the code to parse the input file passed to `PatchyParticles`  
+* The `parse_input.c, parse_input.h` pair contains the data structures, logic and functions used by the code to parse the input file passed to `PatchyParticles`
+
+## Advanced options
+
+### Custom patches
+
+The code also supports particles with custom patch arrangements. This behaviour is enabled by setting `Use_patch_file = 1` and adding `Patch_file = mypatchfile`, where `mypatchfile` is a file specifying the patch details. This is an example of such a file:
+
+```
+3
+-0.2886751345948129 -0.2886751345948129 0.2886751345948129
+0.2886751345948129 0.2886751345948129 0.2886751345948129
+0 0 -1
+epsilon[0][0] = 0
+epsilon[0][1] = 0
+epsilon[0][2] = 1
+epsilon[1][1] = 0
+epsilon[1][2] = 1
+epsilon[2][2] = 0
+KF_delta[0][2] = 0.05
+KF_delta[1][2] = 0.05
+KF_cosmax[0] = 0.93
+KF_cosmax[1] = 0.93
+KF_cosmax[2] = -0.16
+```
+
+This file tells the code that each particle has 3 patches (first line) pointing towards the direction specified by the three unit vectors (lines 2-4). The other lines then set the patch-patch bonding energy (`epsilon[X][Y]`) and their associated range (`KF_delta[X][Y]`). Each patch is then assigned a width (`KF_cosmax[X]`). The default values are 1 for the bond strength and `KF_delta` and `KF_cosmax` for the range and width, respectively. The two latter values are set in the input file.
+
+### Isotropic repulsion
+
+A square-shoulder repulsion can be enabled by setting its range with `Repulsive_shoulder_width` and its height with `Repulsive_shoulder_height`. A value of `Repulsive_shoulder_width = 0.5` would make the shoulder extend `0.5` from the surface of a particle.
+
+The special option `Repulsive_LR_model` does not consider the repulsive contributions when patches `X` and `Y` have `epsilon[X][Y]` != 0, are aligned from the angular point of view but are too distant do interact attractively.
 
 ## Acknowledgements
 
