@@ -280,7 +280,7 @@ void output_save_to_mgl(Output *output_files, System *syst, char *name) {
 		r[0] -= syst->box[0] * floor((r[0]) / syst->box[0]);
 		r[1] -= syst->box[1] * floor((r[1]) / syst->box[1]);
 		r[2] -= syst->box[2] * floor((r[2]) / syst->box[2]);
-		fprintf(out, "%lf %lf %lf @ 0.5 C[0.521569,0.207843,0.152941,0.4] M", r[0], r[1], r[2]);
+		fprintf(out, "%lf %lf %lf @ 0.5 C[0.521569,0.207843,0.152941] M", r[0], r[1], r[2]);
 
 		int j;
 		for(j = 0; j < syst->n_patches; j++) {
