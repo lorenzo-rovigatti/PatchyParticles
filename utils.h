@@ -20,6 +20,8 @@
 	(result)[2] = (m)[2][0]*(v)[0] + (m)[2][1]*(v)[1] + (m)[2][2]*(v)[2];\
 }
 
+#define MAX_LINE_LENGTH 100000
+
 #include "defs.h"
 
 void set_patches(System *syst, PatchyParticle *p);
@@ -40,5 +42,7 @@ void rotate_vector(vector v, vector axis, double t);
 void set_orientation_around_vector(vector v, matrix orient, double t);
 void gram_schmidt(vector v1, vector v2, vector v3);
 void utils_reset_acceptance_counters(System *syst);
+
+int getLine(char *line,FILE *pfile);
 
 #endif /* UTILS_H_ */

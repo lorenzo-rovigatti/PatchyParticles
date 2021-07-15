@@ -150,22 +150,31 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
-			vector new_r;
+			// COLORS ///////////////////////////
+			// some changes here
+			//vector new_r;
 			matrix new_orient;
-			vector new_patches[syst->n_patches];
+			//vector new_patches[syst->n_patches];
+
 			int buff;
 			// choose a random position and a random orientation so that, at the end of the move, p and receiver won't be bonded any more
+			PatchyParticle new_particle;
+			new_particle.specie=p->specie;
+
 			do {
-				new_r[0] = drand48() * syst->box[0];
-				new_r[1] = drand48() * syst->box[1];
-				new_r[2] = drand48() * syst->box[2];
+				new_particle.r[0] = drand48() * syst->box[0];
+				new_particle.r[1] = drand48() * syst->box[1];
+				new_particle.r[2] = drand48() * syst->box[2];
 				random_orientation(syst, new_orient);
 				for(i = 0; i < syst->n_patches; i++) {
-					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_patches[i]);
+					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_particle.patches[i]);
 				}
-			} while(MC_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
 
-			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
+			//} while(MC_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
+			} while(MC_interact(syst,receiver,&new_particle,&buff, &buff) == PATCH_BOND);
+
+
+			vector disp = { new_particle.r[0] - p->r[0], new_particle.r[1] - p->r[1], new_particle.r[2] - p->r[2] };
 
 			double deltaE = -MC_energy(syst, p);
 			MC_rototraslate_particle(syst, p, disp, new_orient);

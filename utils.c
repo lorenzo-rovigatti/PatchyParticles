@@ -249,3 +249,11 @@ void utils_reset_acceptance_counters(System *syst) {
 	}
 }
 
+
+int getLine(char *line,FILE *pfile)
+{
+	if (fgets(line,MAX_LINE_LENGTH,pfile) == NULL)
+		return 0;
+	else
+		return strlen(line);
+}

@@ -15,7 +15,7 @@ typedef struct input_file input_file;
 void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vector *orient);
 void MC_rollback_particle(System *syst, PatchyParticle *p);
 
-int MC_would_interact(System *syst, PatchyParticle *p, vector r, matrix orient, int *onp, int *onq);
+int MC_would_interact(System *syst, PatchyParticle *p, vector r, matrix orient, int specie, int *onp, int *onq);
 int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq);
 
 double MC_energy(System *syst, PatchyParticle *p);

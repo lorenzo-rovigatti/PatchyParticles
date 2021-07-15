@@ -53,6 +53,7 @@ typedef struct PatchyParticle {
 	vector *patches, *base_patches;
 
 	int cell, cell_old;
+	int specie;
 } PatchyParticle;
 
 typedef struct System {
@@ -82,14 +83,14 @@ typedef struct System {
 	llint **SUS_e_hist;
 	double SUS_e_step;
 	int SUS_e_bins;
-	
+
 	// biased sus variables
 	double *bsus_collect;
 	double *bsus_tm;
 	double *bsus_normvec;
 	double *bsus_pm;
-	
-	
+
+
 	int overlap;
 
 	int tries[N_MOVES];
@@ -109,6 +110,15 @@ typedef struct System {
 
 	int seed;
 	PatchyParticle *particles;
+
+	// COLORS ///////////////////////
+	int num_species;
+	int num_colors;
+	int *colorint;
+	int **particlescolor;
+	int **color;
+	//////////////////////////////////
+
 } System;
 
 #endif /* DEFS_H_ */

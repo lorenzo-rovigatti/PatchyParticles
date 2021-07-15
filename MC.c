@@ -229,7 +229,7 @@ void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vect
 	MC_change_cell(syst, p);
 }
 
-int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches, int *onp, int *onq) {
+int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches,int specie, int *onp, int *onq) {
 	vector dist = {r[0] - p->r[0], r[1] - p->r[1], r[2] - p->r[2]};
 	dist[0] -= syst->box[0] * rint(dist[0] / syst->box[0]);
 	dist[1] -= syst->box[1] * rint(dist[1] / syst->box[1]);
@@ -250,12 +250,19 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 			double p_cos = SCALAR(dist, p->patches[pp]);
 
 			if(p_cos > syst->kf_cosmax) {
+				int p_color=syst->particlescolor[p->specie][pp];
+				int q_color=syst->colorint[p_color];
+
 				for(pq = 0; pq < syst->n_patches; pq++) {
-					double q_cos = -SCALAR(dist, patches[pq]);
-					if(q_cos > syst->kf_cosmax) {
-						*onp = pp;
-						*onq = pq;
-						return PATCH_BOND;
+
+					if (syst->particlescolor[specie][pq]==q_color)
+					{
+						double q_cos = -SCALAR(dist, patches[pq]);
+						if(q_cos > syst->kf_cosmax) {
+							*onp = pp;
+							*onq = pq;
+							return PATCH_BOND;
+						}
 					}
 				}
 			}
@@ -266,7 +273,7 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 }
 
 inline int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq) {
-	return MC_would_interact(syst, p, q->r, q->patches, onp, onq);
+	return MC_would_interact(syst, p, q->r, q->patches,q->specie, onp, onq);
 }
 
 double MC_energy(System *syst, PatchyParticle *p) {

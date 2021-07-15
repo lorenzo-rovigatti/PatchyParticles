@@ -17,6 +17,17 @@
 #include "output.h"
 #include "utils.h"
 
+
+#define Matrix2D(array,dim1,dim2,type)                                         \
+do {                                                                           \
+int j;                                                                         \
+array=(type**)malloc((dim1)*sizeof(type*));                                    \
+array[0]=(type*)calloc((dim1)*(dim2),sizeof(type));                            \
+for (j=0;j<(dim1);j++)                                                         \
+array[j]=array[0]+j*(dim2);                                                    \
+} while (0);
+
+
 void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	syst->n_patches = 4;
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
@@ -68,6 +79,13 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	char bsus_name[256];
 	int bsus_value=getInputString(input, "Initial_bsus_file", bsus_name, 0);
+
+	// COLORS ///////////////////////////////////////
+	char colors_name[256];
+	char species_name[256];
+	int colors_value=getInputString(input, "Initial_colors_file", colors_name, 0);
+	int species_value=getInputString(input, "Initial_species_file", species_name, 0);
+	/////////////////////////////////////////////////
 
 	if(getInputInt(input, "Seed", &syst->seed, 0) == KEY_NOT_FOUND) {
 		syst->seed = time(NULL);
@@ -187,15 +205,16 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			if(syst->Lyz_max <= syst->box[1]) {
 				output_exit(output_files, "Lyz_max should be smaller than box size\n");
 			}
-			
+
 			/* disabled relative boundaries in favor of absolute ones
 			syst->Lyz_min *= syst->box[1];
 			syst->Lyz_max *= syst->box[1];
 			*/
-			
+
 			output_log_msg(output_files, "Ly and Lz are allowed to vary between %lf and %lf\n", syst->Lyz_min, syst->Lyz_max);
 		}
 	}
+
 
 	syst->V = syst->box[0] * syst->box[1] * syst->box[2];
 	syst->particles = malloc(syst->N_max * sizeof(PatchyParticle));
@@ -246,6 +265,49 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	fclose(conf);
 	if(i != syst->N) output_exit(output_files, "Number of particles found in configuration (%d) is different from the value found in the header (%d)\n", i, syst->N);
 
+
+	// COLORS ////////////////////////////////////
+	int num_species;
+	int num_colors;
+	int num_patches=syst->n_patches;
+
+	if ((colors_value!=KEY_NOT_FOUND) && (species_value!=KEY_NOT_FOUND))
+	{
+
+		system_readColorsMax(colors_name,&num_species,&num_colors);
+		syst->num_species=num_species;
+		syst->num_colors=num_colors;
+
+		syst->colorint=calloc(num_colors,sizeof(int));
+		Matrix2D(syst->particlescolor,num_species,num_patches,int);
+		Matrix2D(syst->color,num_colors,num_species,int);
+
+		system_readColors(colors_name,syst->colorint,syst->particlescolor,syst->color);
+		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles);
+	}
+	else
+	{
+		num_species=1;
+		num_colors=1;
+		syst->num_species=1;
+		syst->num_colors=1;
+		syst->colorint=calloc(num_colors,sizeof(int));
+		Matrix2D(syst->particlescolor,num_species,num_patches,int);
+		Matrix2D(syst->color,num_colors,num_species,int);
+
+		syst->colorint[0]=0;
+		syst->particlescolor[0][0]=0;
+		syst->color[0][0]=syst->n_patches;
+
+		int ii;
+		for (ii=0;ii<syst->N;ii++)
+		{
+			syst->particles[ii].specie=0;
+		}
+
+	}
+	//////////////////////////////////////////////
+
 	utils_reset_acceptance_counters(syst);
 
 	syst->r_cut = 1. + syst->kf_delta;
@@ -275,4 +337,165 @@ void system_free(System *syst) {
 		free(syst->bsus_normvec);
 		free(syst->bsus_pm);
 	}
+}
+
+
+void system_readColorsMax(char *namefile,int *max_species,int *max_colors)
+{
+	FILE *pfile=fopen(namefile,"r");
+
+	char line[MAX_LINE_LENGTH]="";
+	char buffer[MAX_LINE_LENGTH]="";
+
+	int maxc=0;
+	int maxp=0;
+
+	while (getLine(line,pfile)>0)
+	{
+		if (line[0]=='B')
+		{
+			char *pch;
+			pch = strtok (line,",");
+
+			int c1=atoi(pch+2);
+
+			pch = strtok (NULL,",");
+
+			strncpy(buffer,pch,(strlen(pch)-2)*sizeof(char));
+			buffer[strlen(pch)-2]='\0';
+
+			int c2=atoi(buffer);
+
+
+			if (c1>maxc)
+				maxc=c1;
+			if (c2>maxc)
+				maxc=c2;
+		}
+		else if (line[0]=='C')
+		{
+			char *pch;
+			pch = strtok (line,",");
+
+			int p=atoi(pch+2);
+
+			if (p>maxp)
+				maxp=p;
+		}
+
+	}
+
+	maxp++;
+	maxc++;
+
+	*max_species=maxp;
+	*max_colors=maxc;
+
+	fclose(pfile);
+
+}
+
+
+void system_readColors(char *namefile,int *colorint,int **particle,int **color)
+{
+
+	char line[MAX_LINE_LENGTH]="";
+	char buffer[MAX_LINE_LENGTH]="";
+
+
+	FILE *pfile=fopen(namefile,"r");
+
+	while (getLine(line,pfile)>0)
+	{
+		if (line[0]=='B')
+		{
+			char *pch;
+			pch = strtok (line,",");
+
+			int c1=atoi(pch+2);
+
+			pch = strtok (NULL,",");
+
+			strncpy(buffer,pch,(strlen(pch)-2)*sizeof(char));
+			buffer[strlen(pch)-2]='\0';
+
+			int c2=atoi(buffer);
+
+			colorint[c1]=c2;
+			colorint[c2]=c1;
+
+		}
+		else if (line[0]=='C')
+		{
+			char *pch;
+			pch = strtok (line,",");
+
+			int p=atoi(pch+2);
+
+			pch = strtok (NULL,",");
+
+			int pp=atoi(pch);
+
+			pch = strtok (NULL,",");
+
+			strncpy(buffer,pch,(strlen(pch)-2)*sizeof(char));
+			buffer[strlen(pch)-2]='\0';
+
+			int c=atoi(buffer);
+
+			particle[p][pp]=c;
+
+			color[c][p]++;
+
+		}
+
+	}
+
+	fclose(pfile);
+
+}
+
+
+void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p)
+{
+	char line[100000]="";
+
+	FILE *pfile=fopen(nomefile,"r");
+
+	// intestazione
+	getLine(line,pfile);
+	int nn,ns;
+	sscanf(line,"%d %d\n",&nn,&ns);
+	assert(n==nn);
+	assert(ns==species);
+
+	getLine(line,pfile);
+	char *pch;
+	int tokens=0;
+
+	pch = strtok (line," ");
+	while (pch != NULL)
+	{
+		p[tokens].specie=atoi(pch);
+		tokens++;
+		pch = strtok (NULL, " ");
+	}
+
+	/*
+	int specie;
+	int i=0;
+	while (getLine(line,pfile)>0)
+	{
+		sscanf(line,"%d\n",&specie);
+
+		p[i].specie=specie;
+
+		i++;
+	}
+	*/
+
+	assert(tokens==n);
+
+	fclose(pfile);
+
 }
