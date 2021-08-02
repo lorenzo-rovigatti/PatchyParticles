@@ -20,6 +20,14 @@ void do_NVT(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N; i++) {
 		syst->do_dynamics(syst, output_files);
+	}
+}
+
+
+void do_NVT_Lx(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N; i++) {
+		syst->do_dynamics(syst, output_files);
 
 		double R = drand48();
 		if(syst->Lx_move && R < 1. / syst->N) {
@@ -35,6 +43,18 @@ void do_GC(System *syst, Output *output_files) {
 		if(R < 0.01) {
 			MC_add_remove(syst, output_files);
 		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
+
+void do_GC_Lx(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		double R = drand48();
+		if(R < 0.01) {
+			MC_add_remove(syst, output_files);
+		}
 		else if(syst->Lx_move && R < (0.01 + 1. / syst->N)) {
 			MC_change_Lx(syst, output_files);
 		}
@@ -43,6 +63,18 @@ void do_GC(System *syst, Output *output_files) {
 }
 
 void do_SUS(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		double R = drand48();
+		if(R < 0.01) {
+			MC_add_remove(syst, output_files);
+			syst->SUS_hist[syst->N - syst->N_min]++;
+		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
+void do_SUS_Lx(System *syst, Output *output_files) {
 	int i;
 	for(i = 0; i < syst->N_max; i++) {
 		double R = drand48();
@@ -75,11 +107,70 @@ void do_BSUS(System *syst, Output *output_files) {
 		if(R < 0.5) {
 			MC_add_remove_biased(syst, output_files);
 		}
+		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+	}
+}
+
+
+void do_BSUS_Lx(System *syst, Output *output_files) {
+	int i;
+	for(i = 0; i < syst->N_max; i++) {
+		double R = drand48();
+		if(R < 0.5) {
+			MC_add_remove_biased(syst, output_files);
+		}
 		else if(syst->Lx_move && R < (0.5 + 1. / syst->N)) {
 			MC_change_Lx(syst, output_files);
 		}
 		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
 	}
+}
+
+void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_files2)
+{
+	int i;
+
+	System *systa,*systb;
+	Output *output;
+
+	int N=syst1->N+syst2->N;
+
+	for (i=0;i<=N;i++)
+	{
+		// selezioniamo la scatola
+		double R = drand48();
+		systa=syst1;
+		systb=syst2;
+		output=output_files1;
+		if(R < 0.5)
+		{
+			systa=syst2;
+			systb=syst1;
+			output=output_files2;
+		}
+
+		// selezioniamo la mossa
+		R = drand48();
+
+		if (R<systa->gibbsVolumeFrequency)
+		{
+			// volume moves
+			MC_gibbs_VolumeMove(systa,systb,output);
+		}
+		else if (R<systa->gibbsVolumeFrequency+systa->gibbsSwapFrequency)
+		{
+			// swap moves
+			MC_gibbs_transfer(systa,systb,output);
+		}
+		else
+		{
+			if (systa->N!=0)
+			{
+				systa->do_dynamics(systa, output);
+			}
+		}
+	}
+
 }
 
 void MC_init(input_file *input, System *syst, Output *IO) {
@@ -89,19 +180,31 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 	 */
 	switch(syst->ensemble) {
 	case NVT:
-		syst->do_ensemble = &do_NVT;
+		if (syst->Lx_move)
+			syst->do_ensemble = &do_NVT_Lx;
+		else
+			syst->do_ensemble = &do_NVT;
 		break;
 	case GC:
-		syst->do_ensemble = &do_GC;
+		if (syst->Lx_move)
+			syst->do_ensemble = &do_GC_Lx;
+		else
+			syst->do_ensemble = &do_GC;
 		break;
 	case SUS:
-		syst->do_ensemble = &do_SUS;
+		if (syst->Lx_move)
+			syst->do_ensemble = &do_SUS_Lx;
+		else
+			syst->do_ensemble = &do_SUS;
 		break;
 	case NPT:
 		syst->do_ensemble = &do_NPT;
 		break;
 	case BSUS:
-		syst->do_ensemble= &do_BSUS;
+		if (syst->Lx_move)
+			syst->do_ensemble= &do_BSUS_Lx;
+		else
+			syst->do_ensemble= &do_BSUS;
 		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
@@ -789,4 +892,286 @@ void MC_check_energy(System *syst, Output *IO) {
 	}
 
 	syst->energy = E;
+}
+
+
+void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
+	System *syst;
+
+
+
+	double old_volume_a=systa->box[0]*systa->box[1]*systa->box[2];
+	double old_volume_b=systb->box[0]*systb->box[1]*systb->box[2];
+	double v=old_volume_a+old_volume_b;
+
+	double lnvl=log(old_volume_a/old_volume_b)+(drand48()-0.5)*systa->gibbsVolumeDeltamax;
+
+	double new_volume_a=v*exp(lnvl)/(1.+exp(lnvl));
+
+	double delta_E_a = -systa->energy;
+
+	double rescale_factor = pow(new_volume_a/old_volume_a,1./3.);
+
+	syst=systa;
+
+	syst->tries[VOLUME]++;
+
+	syst->box[0]*=rescale_factor;
+	syst->box[1]*=rescale_factor;
+	syst->box[2]*=rescale_factor;
+
+
+	// if we compress the system too much we'll have to recompute the cells
+	if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
+		cells_free(syst->cells);
+		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
+	}
+
+	int i;
+	// rescale particles' positions
+	for(i = 0; i < syst->N; i++) {
+		PatchyParticle *p = syst->particles + i;
+		p->r[0] *= rescale_factor;
+		p->r[1] *= rescale_factor;
+		p->r[2] *= rescale_factor;
+	}
+
+	// compute the new energy
+	int overlap_found = 0;
+	for(i = 0; i < syst->N && !overlap_found; i++) {
+		PatchyParticle *p = syst->particles + i;
+		delta_E_a += MC_energy(syst, p) * 0.5;
+		if(syst->overlap) {
+			overlap_found = 1;
+		}
+	}
+
+
+	double arga=delta_E_a-(syst->N+1)*syst->T*log(new_volume_a/old_volume_a);
+
+	if (!overlap_found)
+	{
+		syst=systb;
+
+		double delta_E_b = -syst->energy;
+		double new_volume_b=v-new_volume_a;
+
+		// f e' il parametro con cui scalano le distanze
+		double rescale_factor_b=pow(new_volume_b/old_volume_b,1./3.);
+
+		syst->box[0]*=rescale_factor_b;
+		syst->box[1]*=rescale_factor_b;
+		syst->box[2]*=rescale_factor_b;
+
+
+		// if we compress the system too much we'll have to recompute the cells
+		if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
+			cells_free(syst->cells);
+			cells_init(syst, IO, syst->r_cut);
+			cells_fill(syst);
+		}
+
+		// rescale particles' positions
+		for(i = 0; i < syst->N; i++) {
+			PatchyParticle *p = syst->particles + i;
+			p->r[0] *= rescale_factor_b;
+			p->r[1] *= rescale_factor_b;
+			p->r[2] *= rescale_factor_b;
+		}
+
+		// compute the new energy
+		overlap_found = 0;
+		for(i = 0; i < syst->N && !overlap_found; i++) {
+			PatchyParticle *p = syst->particles + i;
+			delta_E_b += MC_energy(syst, p) * 0.5;
+			if(syst->overlap) {
+				overlap_found = 1;
+			}
+		}
+
+		double argb=delta_E_b-(syst->N+1)*syst->T*log(new_volume_b/old_volume_b);
+
+		if ((!overlap_found) && ( (arga+argb<=0.) || (drand48()<exp(-(arga+argb)/syst->T)) ))
+		{
+			systa->V=new_volume_a;
+			systa->energy += delta_E_a;
+			systa->accepted[VOLUME]++;
+
+			systb->V=new_volume_b;
+			systb->energy += delta_E_b;
+
+		}
+		else
+		{
+			for(i = 0; i < systa->N; i++) {
+				PatchyParticle *p = systa->particles + i;
+				p->r[0] /= rescale_factor;
+				p->r[1] /= rescale_factor;
+				p->r[2] /= rescale_factor;
+
+			}
+
+			systa->box[0]/=rescale_factor;
+			systa->box[1]/=rescale_factor;
+			systa->box[2]/=rescale_factor;
+			systa->overlap = 0;
+
+			for(i = 0; i < systb->N; i++) {
+				PatchyParticle *p = systb->particles + i;
+				p->r[0] /= rescale_factor_b;
+				p->r[1] /= rescale_factor_b;
+				p->r[2] /= rescale_factor_b;
+
+			}
+
+			systb->box[0]/=rescale_factor_b;
+			systb->box[1]/=rescale_factor_b;
+			systb->box[2]/=rescale_factor_b;
+			systb->overlap = 0;
+
+
+		}
+
+	}
+}
+
+void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
+	systa->tries[TRANSFER]++;
+
+	// addition in systa
+	// removal in systb
+
+	// select the species to move
+	int s=(int)(drand48()*systa->num_species);
+
+	if (systb->species_count[s]>0)
+	{
+
+		// ADDITION MOVE
+
+		if(systa->N == systa->N_max) {
+			output_exit(IO, "The system contains the maximum number of particles set in the input file (%d), increase Gibbs_N_max\n", systa->N_max);
+			return;
+		}
+
+		PatchyParticle *pa = systa->particles + systa->N;
+		pa->index = systa->N;
+
+		pa->r[0] = drand48() * systa->box[0];
+		pa->r[1] = drand48() * systa->box[1];
+		pa->r[2] = drand48() * systa->box[2];
+
+		random_orientation(systa, pa->orientation);
+
+		int i;
+		for(i = 0; i < pa->n_patches; i++) {
+			MATRIX_VECTOR_MULTIPLICATION(pa->orientation, pa->base_patches[i], pa->patches[i]);
+		}
+
+		double energy_1 = MC_energy(systa, pa);
+		double volume_1=(systa->box[0]*systa->box[1]*systa->box[2]);
+		int particle_1=1+systa->N;
+
+		if (!systa->overlap)
+		{
+			// REMOVAL MOVE
+			int ri=(int) (drand48() * systb->species_count[s]);
+			int ii=-1;
+			int j=0;
+
+			do {
+				if (systb->particles[j++].specie==s)
+					ii++;
+			} while ((ii<ri) && (j<systb->N));
+
+			assert(ii==ri);
+
+			PatchyParticle *pr = systb->particles + (j-1);
+
+			double energy_2 = -MC_energy(systb, pr);
+			double volume_2=(systb->box[0]*systb->box[1]*systb->box[2]);
+			int particle_2=systb->N;
+
+			double acceptance=(particle_2*volume_1/(particle_1*volume_2))*exp(-(energy_1+energy_2)/systa->T);
+
+			if (drand48() < acceptance)
+			{
+				// accept the addition move in systa
+				systa->energy += energy_1;
+
+				// add the particle to the new cell
+				int ind[3];
+				int cell_index = cells_fill_and_get_idx_from_particle(systa, pa, ind);
+				systa->cells->next[pa->index] = systa->cells->heads[cell_index];
+				systa->cells->heads[cell_index] = pa;
+				pa->cell = pa->cell_old = cell_index;
+
+				systa->N++;
+				systa->accepted[TRANSFER]++;
+
+				systa->species_count[s]++;
+
+				// accept the removal move in systb
+				systb->energy += energy_2;
+				systb->N--;
+
+				// remove the particle from the old cell
+				PatchyParticle *previous = NULL;
+				PatchyParticle *current = systb->cells->heads[pr->cell];
+				assert(current != NULL);
+				while(current->index != pr->index) {
+					previous = current;
+					current = systb->cells->next[current->index];
+					assert(systb->cells->next[previous->index]->index == current->index);
+				}
+				if(previous == NULL) systb->cells->heads[pr->cell] = systb->cells->next[pr->index];
+				else systb->cells->next[previous->index] = systb->cells->next[pr->index];
+
+				if(pr->index != systb->N) {
+					PatchyParticle *q = systb->particles + systb->N;
+					assert(q->index != pr->index);
+					// we have to change the last particle's identity
+					// first we remove it from its cell
+					previous = NULL;
+					current = systb->cells->heads[q->cell];
+					assert(current != NULL);
+					while(current->index != q->index) {
+						previous = current;
+						current = systb->cells->next[current->index];
+						assert(systb->cells->next[previous->index]->index == current->index);
+					}
+					if(previous == NULL) systb->cells->heads[q->cell] = systb->cells->next[q->index];
+					else systb->cells->next[previous->index] = systb->cells->next[q->index];
+
+					// copy its type, position and patches onto p's memory position
+					pr->r[0] = q->r[0];
+					pr->r[1] = q->r[1];
+					pr->r[2] = q->r[2];
+
+					int k;
+					for(k = 0; k < 3; k++) {
+						memcpy(pr->orientation[k], q->orientation[k], sizeof(double) * 3);
+					}
+					for(k = 0; k < pr->n_patches; k++) {
+						MATRIX_VECTOR_MULTIPLICATION(pr->orientation, pr->base_patches[k], pr->patches[k]);
+					}
+
+					// and finally add it back to its former cell
+					pr->cell = q->cell;
+					systb->cells->next[pr->index] = systb->cells->heads[pr->cell];
+					systb->cells->heads[pr->cell] = pr;
+				}
+
+
+				systb->species_count[s]--;
+
+			}
+		}
+		else
+		{
+			systa->overlap=0;
+		}
+	}
+
 }

@@ -178,6 +178,11 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			break;
 		}
 	}
+	else if (syst->ensemble == GIBBS)
+	{
+		getInputInt(input, "Gibbs_N_max", &syst->N_max, 1);
+		syst->N_min = 0;
+	}
 	else {
 		syst->N_max = syst->N;
 	}
@@ -215,6 +220,14 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		}
 	}
 
+
+	// GIBBS initialization /////
+	if(syst->ensemble == GIBBS) {
+		getInputDouble(input, "Gibbs_volume_frequency", &syst->gibbsVolumeFrequency, 1);
+		getInputDouble(input, "Gibbs_swap_frequency", &syst->gibbsSwapFrequency, 1);
+		getInputDouble(input, "Gibbs_volume_deltamax", &syst->gibbsVolumeDeltamax, 1);
+	}
+	/////////////////////////////
 
 	syst->V = syst->box[0] * syst->box[1] * syst->box[2];
 	syst->particles = malloc(syst->N_max * sizeof(PatchyParticle));
@@ -283,7 +296,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		Matrix2D(syst->color,num_colors,num_species,int);
 
 		system_readColors(colors_name,syst->colorint,syst->particlescolor,syst->color);
-		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles);
+		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles,syst->species_count);
 	}
 	else
 	{
@@ -456,7 +469,7 @@ void system_readColors(char *namefile,int *colorint,int **particle,int **color)
 }
 
 
-void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p)
+void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p,int *species_count)
 {
 	char line[100000]="";
 
@@ -473,10 +486,14 @@ void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p)
 	char *pch;
 	int tokens=0;
 
+	memset(species_count,0,ns*sizeof(int));
+
 	pch = strtok (line," ");
 	while (pch != NULL)
 	{
-		p[tokens].specie=atoi(pch);
+		int s=atoi(pch);
+		p[tokens].specie=s;
+		species_count[s]++;
 		tokens++;
 		pch = strtok (NULL, " ");
 	}

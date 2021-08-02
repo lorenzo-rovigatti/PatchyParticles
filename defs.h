@@ -8,7 +8,7 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#define N_MOVES 8
+#define N_MOVES 9
 #define ROTO_TRASL 0
 #define AVB 1
 #define ADD 2
@@ -17,12 +17,14 @@
 #define MOVE_VMMC 5
 #define VOLUME 6
 #define LX 7
+#define TRANSFER 8
 
 #define NVT 0
 #define GC 1
 #define SUS 3
 #define NPT 5
 #define BSUS 4
+#define GIBBS 6
 
 #define RTMC 0
 #define VMMC 1
@@ -115,9 +117,17 @@ typedef struct System {
 	int num_species;
 	int num_colors;
 	int *colorint;
-	int **particlescolor;
-	int **color;
-	//////////////////////////////////
+	int **particlescolor; // particlescolor[specie,patch]=color
+	int **color; // color[color,specie]=how many patches of that color
+	int *species_count; // species_count[specie]=how many particles of that specie
+	/////////////////////////////////
+
+	// GIBBS  ///////////////////////
+	double gibbsVolumeFrequency;
+	double gibbsSwapFrequency;
+	double gibbsVolumeDeltamax;
+	/////////////////////////////////
+
 
 } System;
 
