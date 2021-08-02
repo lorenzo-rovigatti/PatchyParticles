@@ -76,7 +76,7 @@ void output_init(input_file *input, Output *output_files) {
 		output_files->density = fopen(name, mode);
 		if(output_files->density == NULL) output_exit(output_files, "Density file '%s' is not writable\n", name);
 
-		if(ensemble == 3 || ensemble == 6 || ensemble == BSUS) {
+		if(ensemble == SUS || ensemble == BSUS) {
 			getInputString(input, "Umbrella_sampling_folder", output_files->sus_folder, 1);
 			if(access(output_files->sus_folder, W_OK) != 0) {
 				output_exit(output_files, "Cannot create files in directory '%s': please make sure that the directory exists and it is writable\n", output_files->sus_folder);
@@ -127,7 +127,16 @@ void output_print(Output *output_files, System *syst, llint step) {
 	/**
 	 * Print the density, if we are simulating in a non-canonical ensemble
 	 */
-	if(syst->ensemble != 0) {
+	if (syst->ensemble==GIBBS)
+	{
+		fprintf(output_files->density, "%lld %lf %d", step, syst->N / syst->V, syst->N);
+		int kk;
+		for (kk=0;kk<syst->num_species;kk++)
+			fprintf(output_files->density, " %d",syst->species_count[kk]);
+		fprintf(output_files->density, "\n");
+		fflush(output_files->density);
+	}
+	else if(syst->ensemble != 0) {
 		fprintf(output_files->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
 		fflush(output_files->density);
 	}
@@ -141,7 +150,7 @@ void output_print(Output *output_files, System *syst, llint step) {
 		fprintf(output_files->boxshape, "%lld %lf %lf %lf\n",step,syst->box[0],syst->box[1],syst->box[2]);
 		fflush(output_files->boxshape);
 	}
-	
+
 	/**
 	 * Print acceptances for the different moves, according to the chosen dynamics
 	 */
@@ -183,7 +192,7 @@ void output_print(Output *output_files, System *syst, llint step) {
 		fprintf(output_files->acc, " %e", syst->accepted[LX]/ (double) syst->tries[LX]);
 	}
 
-	
+
 	fprintf(output_files->acc, "\n");
 	fflush(output_files->acc);
 	utils_reset_acceptance_counters(syst);

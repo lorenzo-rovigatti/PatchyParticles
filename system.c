@@ -28,6 +28,13 @@ array[j]=array[0]+j*(dim2);                                                    \
 } while (0);
 
 
+
+#define Free2D(array)                                                          \
+free(array[0]);                                                                \
+free(array);
+
+
+
 void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	syst->n_patches = 4;
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
@@ -294,6 +301,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->colorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
+		syst->species_count=calloc(num_species,sizeof(int));
 
 		system_readColors(colors_name,syst->colorint,syst->particlescolor,syst->color);
 		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles,syst->species_count);
@@ -307,6 +315,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->colorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
+		syst->species_count=calloc(num_species,sizeof(int));
 
 		syst->colorint[0]=0;
 		syst->particlescolor[0][0]=0;
@@ -350,6 +359,12 @@ void system_free(System *syst) {
 		free(syst->bsus_normvec);
 		free(syst->bsus_pm);
 	}
+
+	free(syst->colorint);
+	Free2D(syst->particlescolor);
+	Free2D(syst->color);
+	free(syst->species_count);
+
 }
 
 

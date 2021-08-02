@@ -206,6 +206,9 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		else
 			syst->do_ensemble= &do_BSUS;
 		break;
+	case GIBBS:
+		syst->do_ensemble = NULL;
+		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
 		break;
@@ -1057,6 +1060,7 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 
 		PatchyParticle *pa = systa->particles + systa->N;
 		pa->index = systa->N;
+		pa->specie=s;
 
 		pa->r[0] = drand48() * systa->box[0];
 		pa->r[1] = drand48() * systa->box[1];
@@ -1085,6 +1089,10 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 					ii++;
 			} while ((ii<ri) && (j<systb->N));
 
+			if (ii!=ri)
+			{
+				printf("%d\n",ii);
+			}
 			assert(ii==ri);
 
 			PatchyParticle *pr = systb->particles + (j-1);
@@ -1144,10 +1152,12 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 					if(previous == NULL) systb->cells->heads[q->cell] = systb->cells->next[q->index];
 					else systb->cells->next[previous->index] = systb->cells->next[q->index];
 
-					// copy its type, position and patches onto p's memory position
+					// copy its type, specie, position and patches onto p's memory position
 					pr->r[0] = q->r[0];
 					pr->r[1] = q->r[1];
 					pr->r[2] = q->r[2];
+
+					pr->specie=q->specie;
 
 					int k;
 					for(k = 0; k < 3; k++) {
