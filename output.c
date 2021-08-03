@@ -68,6 +68,9 @@ void output_init(input_file *input, Output *output_files) {
 	sprintf(output_files->configuration_last, "last.rrr");
 	getInputString(input, "Configuration_last", output_files->configuration_last, 0);
 
+	sprintf(output_files->specie_last, "last_specie.rrr");
+	getInputString(input, "Specie_last", output_files->specie_last, 0);
+
 	int ensemble;
 	getInputInt(input, "Ensemble", &ensemble, 1);
 	if(ensemble != 0) {
@@ -325,6 +328,21 @@ void output_save(Output *output_files, System *syst, llint step, char *name) {
 		p++;
 	}
 	fclose(out);
+}
+
+void output_specie_save(Output *output_files, System *syst, llint step, char *name)
+{
+	FILE *out = fopen(name, "w");
+	if(out == NULL) output_exit(output_files, "File '%s' is not writable\n", name);
+
+	fprintf(out,"%d %d\n",syst->N,syst->num_species);
+
+	int i;
+	for (i=0;i<syst->N;i++)
+	{
+		fprintf(out,"%d\n",syst->particles[i].specie);
+	}
+
 }
 
 

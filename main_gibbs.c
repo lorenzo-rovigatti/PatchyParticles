@@ -120,10 +120,13 @@ int main(int argc, char *argv[]) {
 		 */
 		if(curr_step > 0 && (curr_step % output_files1.save_every) == 0) {
 
-			char name[1024];
+			char name[1024],sname[1024];
 			sprintf(name, "%s/conf_%lld.rrr", output_files1.configuration_folder, curr_step);
+			sprintf(sname, "%s/specie_%lld.rrr", output_files1.configuration_folder, curr_step);
 			output_save(&output_files1, &syst1, curr_step, name);
+			output_specie_save(&output_files1, &syst1, curr_step, sname);
 			output_save(&output_files1, &syst1, curr_step, output_files1.configuration_last);
+			output_specie_save(&output_files1, &syst1, curr_step, output_files1.specie_last);
 
 			if(output_files1.save_also_as_mgl) {
 				sprintf(name, "%s/conf_%lld.mgl", output_files1.configuration_folder, curr_step);
@@ -133,6 +136,13 @@ int main(int argc, char *argv[]) {
 			}
 
 			sprintf(name, "%s/conf_%lld.rrr", output_files2.configuration_folder, curr_step);
+			sprintf(sname, "%s/specie_%lld.rrr", output_files2.configuration_folder, curr_step);
+			output_save(&output_files2, &syst2, curr_step, name);
+			output_save(&output_files2, &syst2, curr_step, output_files2.configuration_last);
+			output_specie_save(&output_files2, &syst2, curr_step, sname);
+			output_specie_save(&output_files2, &syst2, curr_step, output_files2.specie_last);
+
+			sprintf(name, "%s/specie_%lld.rrr", output_files2.configuration_folder, curr_step);
 			output_save(&output_files2, &syst2, curr_step, name);
 			output_save(&output_files2, &syst2, curr_step, output_files2.configuration_last);
 

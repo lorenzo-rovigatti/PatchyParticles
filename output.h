@@ -24,6 +24,7 @@ typedef struct Output {
 	int restart_step_counter;
 	char configuration_folder[512];
 	char configuration_last[512];
+	char specie_last[512];
 	char sus_folder[512];
 	char bonds_folder[512];
 	FILE *log;
@@ -40,6 +41,7 @@ void output_sus(Output *IO, System *syst, llint step);
 void output_bsus(Output *IO, System *syst, llint step);
 void output_e_sus(Output *IO, System *syst, llint step);
 void output_save(Output *IO, System *syst, llint step, char *name);
+void output_specie_save(Output *output_files, System *syst, llint step, char *name);
 void output_print(Output *IO, System *syst, llint step);
 void output_log_msg(Output *IO, char *format, ...);
 void output_exit(Output *IO, char *format, ...);

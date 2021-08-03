@@ -497,23 +497,8 @@ void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p,int *
 	assert(n==nn);
 	assert(ns==species);
 
-	getLine(line,pfile);
-	char *pch;
-	int tokens=0;
-
 	memset(species_count,0,ns*sizeof(int));
 
-	pch = strtok (line," ");
-	while (pch != NULL)
-	{
-		int s=atoi(pch);
-		p[tokens].specie=s;
-		species_count[s]++;
-		tokens++;
-		pch = strtok (NULL, " ");
-	}
-
-	/*
 	int specie;
 	int i=0;
 	while (getLine(line,pfile)>0)
@@ -521,12 +506,13 @@ void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p,int *
 		sscanf(line,"%d\n",&specie);
 
 		p[i].specie=specie;
+		species_count[specie]++;
 
 		i++;
 	}
-	*/
 
-	assert(tokens==n);
+
+	assert(i==n);
 
 	fclose(pfile);
 
