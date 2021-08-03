@@ -126,7 +126,7 @@ void do_BSUS_Lx(System *syst, Output *output_files) {
 	}
 }
 
-void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_files2)
+void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_files2,int step)
 {
 	int i;
 
@@ -156,6 +156,7 @@ void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_f
 		{
 			// volume moves
 			MC_gibbs_VolumeMove(systa,systb,output);
+
 		}
 		else if (R<systa->gibbsVolumeFrequency+systa->gibbsSwapFrequency)
 		{
@@ -169,6 +170,13 @@ void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_f
 				systa->do_dynamics(systa, output);
 			}
 		}
+		/*
+		if (step>700)
+		{
+			MC_check_energy(systa, output_files1);
+			MC_check_energy(systb, output_files2);
+		}
+		*/
 	}
 
 }
@@ -919,17 +927,17 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 
 	syst->tries[VOLUME]++;
 
+	vector oldbox_a;
+	oldbox_a[0]=syst->box[0];
+	oldbox_a[1]=syst->box[1];
+	oldbox_a[2]=syst->box[2];
+
 	syst->box[0]*=rescale_factor;
 	syst->box[1]*=rescale_factor;
 	syst->box[2]*=rescale_factor;
 
 
-	// if we compress the system too much we'll have to recompute the cells
-	if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
-		cells_free(syst->cells);
-		cells_init(syst, IO, syst->r_cut);
-		cells_fill(syst);
-	}
+
 
 	int i;
 	// rescale particles' positions
@@ -939,6 +947,14 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 		p->r[1] *= rescale_factor;
 		p->r[2] *= rescale_factor;
 	}
+
+	// if we compress the system too much we'll have to recompute the cells
+	if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
+		cells_free(syst->cells);
+		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
+	}
+
 
 	// compute the new energy
 	int overlap_found = 0;
@@ -963,17 +979,15 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 		// f e' il parametro con cui scalano le distanze
 		double rescale_factor_b=pow(new_volume_b/old_volume_b,1./3.);
 
+		vector oldbox_b;
+		oldbox_b[0]=syst->box[0];
+		oldbox_b[1]=syst->box[1];
+		oldbox_b[2]=syst->box[2];
+
 		syst->box[0]*=rescale_factor_b;
 		syst->box[1]*=rescale_factor_b;
 		syst->box[2]*=rescale_factor_b;
 
-
-		// if we compress the system too much we'll have to recompute the cells
-		if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
-			cells_free(syst->cells);
-			cells_init(syst, IO, syst->r_cut);
-			cells_fill(syst);
-		}
 
 		// rescale particles' positions
 		for(i = 0; i < syst->N; i++) {
@@ -981,6 +995,13 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 			p->r[0] *= rescale_factor_b;
 			p->r[1] *= rescale_factor_b;
 			p->r[2] *= rescale_factor_b;
+		}
+
+		// if we compress the system too much we'll have to recompute the cells
+		if ( ((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut) || ((syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) || ((syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) ) {
+			cells_free(syst->cells);
+			cells_init(syst, IO, syst->r_cut);
+			cells_fill(syst);
 		}
 
 		// compute the new energy
@@ -997,6 +1018,7 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 
 		if ((!overlap_found) && ( (arga+argb<=0.) || (drand48()<exp(-(arga+argb)/syst->T)) ))
 		{
+
 			systa->V=new_volume_a;
 			systa->energy += delta_E_a;
 			systa->accepted[VOLUME]++;
@@ -1007,6 +1029,8 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 		}
 		else
 		{
+
+
 			for(i = 0; i < systa->N; i++) {
 				PatchyParticle *p = systa->particles + i;
 				p->r[0] /= rescale_factor;
@@ -1015,9 +1039,9 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 
 			}
 
-			systa->box[0]/=rescale_factor;
-			systa->box[1]/=rescale_factor;
-			systa->box[2]/=rescale_factor;
+			systa->box[0]=oldbox_a[0];
+			systa->box[1]=oldbox_a[1];
+			systa->box[2]=oldbox_a[2];
 			systa->overlap = 0;
 
 			for(i = 0; i < systb->N; i++) {
@@ -1028,14 +1052,29 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 
 			}
 
-			systb->box[0]/=rescale_factor_b;
-			systb->box[1]/=rescale_factor_b;
-			systb->box[2]/=rescale_factor_b;
+			systb->box[0]=oldbox_b[0];
+			systb->box[1]=oldbox_b[1];
+			systb->box[2]=oldbox_b[2];
 			systb->overlap = 0;
 
 
 		}
 
+	}
+	else
+	{
+		for(i = 0; i < systa->N; i++) {
+			PatchyParticle *p = systa->particles + i;
+			p->r[0] /= rescale_factor;
+			p->r[1] /= rescale_factor;
+			p->r[2] /= rescale_factor;
+
+		}
+
+		systa->box[0]=oldbox_a[0];
+		systa->box[1]=oldbox_a[1];
+		systa->box[2]=oldbox_a[2];
+		systa->overlap = 0;
 	}
 }
 
@@ -1089,10 +1128,6 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 					ii++;
 			} while ((ii<ri) && (j<systb->N));
 
-			if (ii!=ri)
-			{
-				printf("%d\n",ii);
-			}
 			assert(ii==ri);
 
 			PatchyParticle *pr = systb->particles + (j-1);
@@ -1107,6 +1142,7 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 			{
 				// accept the addition move in systa
 				systa->energy += energy_1;
+				systa->N++;
 
 				// add the particle to the new cell
 				int ind[3];
@@ -1115,7 +1151,7 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 				systa->cells->heads[cell_index] = pa;
 				pa->cell = pa->cell_old = cell_index;
 
-				systa->N++;
+
 				systa->accepted[TRANSFER]++;
 
 				systa->species_count[s]++;

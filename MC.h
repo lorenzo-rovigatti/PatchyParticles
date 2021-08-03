@@ -37,7 +37,7 @@ void MC_free(System *syst);
 void MC_change_cell(System *syst, PatchyParticle *p);
 void MC_check_energy(System *syst, Output *output_files);
 
-void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_files2);
+void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_files2,int step);
 void MC_gibbs_VolumeMove(System *systa, System *systb, Output *IO);
 void MC_gibbs_transfer(System *systa, System *systb, Output *IO);
 

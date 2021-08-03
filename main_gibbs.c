@@ -98,16 +98,20 @@ int main(int argc, char *argv[]) {
 		/**
 		 * Print the output (energy, density, acceptance, etc.) every "print_every" steps
 		 */
+
+
+
 		if((curr_step % output_files1.print_every) == 0) {
 			output_print(&output_files1, &syst1, curr_step);
 			output_print(&output_files2, &syst2, curr_step);
 
 			if(curr_step != 0) {
-				MC_check_energy(&syst1, &output_files1);
 				cells_check(&syst1, &output_files1);
+				MC_check_energy(&syst1, &output_files1);
 
-				MC_check_energy(&syst2, &output_files2);
 				cells_check(&syst2, &output_files2);
+				MC_check_energy(&syst2, &output_files2);
+
 			}
 		}
 
@@ -145,9 +149,10 @@ int main(int argc, char *argv[]) {
 		/**
 		 * Perform a Monte Carlo sweep
 		 */
-		do_GIBBS(&syst1,&syst2,&output_files1,&output_files2);
+		do_GIBBS(&syst1,&syst2,&output_files1,&output_files2,curr_step);
 		//syst1.do_ensemble(&syst1, &output_files1);
 		//syst2.do_ensemble(&syst2, &output_files2);
+
 	}
 
 	/**
