@@ -142,9 +142,6 @@ int main(int argc, char *argv[]) {
 			output_specie_save(&output_files2, &syst2, curr_step, sname);
 			output_specie_save(&output_files2, &syst2, curr_step, output_files2.specie_last);
 
-			sprintf(name, "%s/specie_%lld.rrr", output_files2.configuration_folder, curr_step);
-			output_save(&output_files2, &syst2, curr_step, name);
-			output_save(&output_files2, &syst2, curr_step, output_files2.configuration_last);
 
 			if(output_files2.save_also_as_mgl) {
 				sprintf(name, "%s/conf_%lld.mgl", output_files2.configuration_folder, curr_step);

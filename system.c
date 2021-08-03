@@ -320,6 +320,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->colorint[0]=0;
 		syst->particlescolor[0][0]=0;
 		syst->color[0][0]=syst->n_patches;
+		syst->species_count[0]=syst->N;
 
 		int ii;
 		for (ii=0;ii<syst->N;ii++)
