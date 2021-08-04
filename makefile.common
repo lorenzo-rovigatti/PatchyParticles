@@ -26,19 +26,24 @@ LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
 OBJ = parse_input.o output.o system.o MC.o utils.o avb.o vmmc.o cells.o
 
 # ---------  EXECUTABLE -----------#
-EXE = PatchyParticles_gibbs
+EXE2 = PatchyParticles_gibbs
+EXE1 = PatchyParticles
 
 # -------- COMPILATION STEPS ------#
 
-default: PatchyParticles generator
+default: PatchyParticles generator gibbs
 
 all: PatchyParticles generator
 
 generator: generator.o $(OBJ)
 	$(CC) generator.o $(OBJ) $(LIBRARY_DIRS) -lm -o generator
 
-PatchyParticles: main_gibbs.o $(OBJ)
-	$(CC) main_gibbs.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE)
+gibbs: main_gibbs.o $(OBJ)
+	$(CC) main_gibbs.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE2)
+
+PatchyParticles: main.o $(OBJ)
+	$(CC) main.o $(OBJ) $(LIBRARY_DIRS) -lm -o $(EXE1)
+
 
 # -------- SUFFIX RULES ------#
 %.o: %.c makefile.common $(MAKEFILE_NAME)
@@ -55,4 +60,4 @@ utils.o: defs.h
 vmmc.o: defs.h MC.h defs.h output.h parse_input.h system.h utils.h
 
 clean:
-	rm -f $(EXE) $(OBJ) main_gibbs.o generator generator.o
+	rm -f $(EXE1) $(EXE2) $(OBJ) main.o main_gibbs.o generator generator.o
