@@ -342,6 +342,7 @@ void output_specie_save(Output *output_files, System *syst, llint step, char *na
 	{
 		fprintf(out,"%d\n",syst->particles[i].specie);
 	}
+	fclose(out);
 
 }
 
