@@ -11,7 +11,7 @@ typedef struct _avbmc {
 	int num_neighbours;
 
 	double avb_vin, avb_vout;
-	doublt avb_vin_per_unit;
+	double avb_vin_per_unit;
 	double avb_p;
 } avbmc;
 

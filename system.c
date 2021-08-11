@@ -310,7 +310,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		Matrix2D(syst->bonding_volume_units,num_species,num_species,int);
 
 		int ii,jj;
-		for (ii=0;ii<num_species;i++)
+		for (ii=0;ii<num_species;ii++)
 		{
 			for (jj=0;jj<num_species;jj++)
 			{

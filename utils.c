@@ -81,6 +81,7 @@ void place_inside_vbonding_colored(System *syst, PatchyParticle *rec, vector r, 
 	// find the orientation matrix which puts the donor patch as the 0,0,1 patch
 	set_001orientation_around_vector(syst->base_patches[donor_patch],orient);
 
+
 	// this should not be necessary
 	// rotation around the donor patch
 	//utils_rotate_matrix(syst->base_orient, orient, syst->base_patches[donor_patch], 2*drand48()*M_PI);
@@ -276,7 +277,7 @@ void set_orientation_around_vector(vector v, matrix orient, double t) {
 }
 
 
-void set_001orientation_around_vector(vector z, matrix orient) {
+void set_001orientation_around_vector(vector z, matrix output_orient) {
 
 	vector x;
 	vector y;
@@ -287,6 +288,7 @@ void set_001orientation_around_vector(vector z, matrix orient) {
 	// orthonormalize
 	gram_schmidt(z,x,y);
 
+	matrix orient;
 	orient[0][0] = x[0];
 	orient[1][0] = x[1];
 	orient[2][0] = x[2];
@@ -308,6 +310,12 @@ void set_001orientation_around_vector(vector z, matrix orient) {
 		orient[0][1] = x[0];
 		orient[1][1] = x[1];
 		orient[2][1] = x[2];
+	}
+
+	// this operation could be avoided by using the property of deteminants | A^T | = | A |
+	int i,j;
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) output_orient[i][j] = orient[j][i];
 	}
 
 }

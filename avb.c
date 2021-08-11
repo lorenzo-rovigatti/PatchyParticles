@@ -275,7 +275,7 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
-			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * bonding_volume*avbdata->avb_vin_per_unit / ((avbdata->num_neighbours + 1.) * (syst->V-bonding_volume*avbdata->avb_vin_per_unit)));
+			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * bonding_volume*avbdata->avb_vin_per_unit / ((avbdata->num_neighbours + 1.) * (syst->V-bonding_volume*avbdata->avb_vin_per_unit));
 
 			if(!syst->overlap && drand48() < acc) {
 				syst->accepted[AVB]++;
@@ -315,12 +315,13 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			// some changes here
 			//vector new_r;
 			matrix new_orient;
-			//vector new_patches[syst->n_patches];
+			vector new_patches[syst->n_patches];
 
 			int buff;
 			// choose a random position and a random orientation so that, at the end of the move, p and receiver won't be bonded any more
 			PatchyParticle new_particle;
 			new_particle.specie=p->specie;
+			new_particle.patches=new_patches;
 
 			do {
 				new_particle.r[0] = drand48() * syst->box[0];
