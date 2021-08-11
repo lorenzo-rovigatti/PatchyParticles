@@ -75,6 +75,40 @@ void place_inside_vbonding(System *syst, PatchyParticle *rec, vector r, matrix o
 	r[2] = target_patch_dir[2]*dist + rec->r[2];
 }
 
+
+void place_inside_vbonding_colored(System *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch,int donor_patch) {
+
+	// find the orientation matrix which puts the donor patch as the 0,0,1 patch
+	set_001orientation_around_vector(syst->base_patches[donor_patch],orient);
+
+	// this should not be necessary
+	// rotation around the donor patch
+	//utils_rotate_matrix(syst->base_orient, orient, syst->base_patches[donor_patch], 2*drand48()*M_PI);
+
+	vector target_patch_dir;
+	memcpy(target_patch_dir, rec->patches[target_patch], 3*sizeof(double));
+
+	vector norm_vect;
+	get_perpendicular_versor(target_patch_dir, norm_vect);
+
+	// choose a new direction
+	double theta = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
+	rotate_vector(target_patch_dir, norm_vect, theta);
+	normalize(target_patch_dir);
+
+	// another random angle
+	double theta2 = acos(syst->kf_cosmax + (1. - syst->kf_cosmax) * drand48());
+	set_orientation_around_vector(target_patch_dir, orient, theta2);
+
+	// choose the distance
+	double dist = pow(1. + drand48()*(syst->kf_delta*syst->kf_delta*syst->kf_delta + 3.*SQR(syst->kf_delta) + 3.*syst->kf_delta), 1. / 3.);
+
+	r[0] = target_patch_dir[0]*dist + rec->r[0];
+	r[1] = target_patch_dir[1]*dist + rec->r[1];
+	r[2] = target_patch_dir[2]*dist + rec->r[2];
+}
+
+
 double determinant(double (*m)[3]) {
 	double det = 0.;
 
@@ -240,6 +274,44 @@ void set_orientation_around_vector(vector v, matrix orient, double t) {
 	for(i = 0; i < 3; i++) for(j = 0; j < 3; j++) orient_old[i][j] = orient[i][j];
 	matrix_matrix_multiplication(cambiamento_base, orient_old, orient);
 }
+
+
+void set_001orientation_around_vector(vector z, matrix orient) {
+
+	vector x;
+	vector y;
+
+	random_vector_on_sphere(x);
+	random_vector_on_sphere(y);
+
+	// orthonormalize
+	gram_schmidt(z,x,y);
+
+	orient[0][0] = x[0];
+	orient[1][0] = x[1];
+	orient[2][0] = x[2];
+
+	orient[0][1] = y[0];
+	orient[1][1] = y[1];
+	orient[2][1] = y[2];
+
+	orient[0][2] = z[0];
+	orient[1][2] = z[1];
+	orient[2][2] = z[2];
+
+	// rotations have det(R) == 1
+	if(determinant(orient) < 0) {
+		orient[0][0] = y[0];
+		orient[1][0] = y[1];
+		orient[2][0] = y[2];
+
+		orient[0][1] = x[0];
+		orient[1][1] = x[1];
+		orient[2][1] = x[2];
+	}
+
+}
+
 
 void utils_reset_acceptance_counters(System *syst) {
 	int i;

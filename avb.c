@@ -193,3 +193,160 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 	}
 
 }
+
+
+
+void AVBMC_dynamics_colors(System *syst, Output *IO) {
+	if(drand48() < avbdata->avb_p || syst->N < 2) MC_move_rototranslate(syst, IO);
+	else {
+		syst->tries[AVB]++;
+
+		PatchyParticle *receiver = syst->particles + (int) (drand48() * syst->N);
+		_set_neighbours(syst, receiver);
+
+		int i;
+		PatchyParticle *p;
+
+		// the move will attempt to bring p inside the bonding volume of receiver
+		if(drand48() > 0.5) {
+			// if all the particles but receiver are in receiver's bonding volume then no move is possible
+			if(avbdata->num_neighbours == (syst->N - 1)) return;
+
+			int found = 0;
+
+			// select a particle which is not in receiver's bonding volume
+			do {
+				p = syst->particles + (int) (drand48() * syst->N);
+				found = 1;
+				for(i = 0; i < receiver->n_patches && found; i++)
+					if(avbdata->neighbours[i] == p) found = 0;
+			} while(!found || p == receiver);
+
+			// select which bonding volume to occupy
+			int j;
+			int sr=receiver->specie;
+			int sp=p->specie;
+			int bonding_volume=0;
+			for (i=0;i<receiver->n_patches;i++)
+			{
+				int c=syst->particlescolor[sr][i];
+				int cc=syst->colorint[c];
+				bonding_volume+=syst->color[cc][sp];
+			}
+
+			int sel_bv=(int) (drand48() * bonding_volume);
+			int p_p=-1;
+			int p_r=0;
+			i=-1;
+			int c=syst->particlescolor[sr][p_r];
+			int cc=syst->colorint[c];
+
+			do{
+
+				p_p++;
+
+				if (p_p==p->n_patches)
+				{
+					p_p=0;
+					p_r++;
+
+					c=syst->particlescolor[sr][p_r];
+					cc=syst->colorint[c];
+				}
+
+				if (syst->particlescolor[sp][p_p]==cc)
+					i++;
+
+			} while (i<sel_bv);
+
+			vector new_r;
+			matrix new_orient;
+
+			place_inside_vbonding_colored(syst, receiver, new_r, new_orient, p_r,p_p);
+
+			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
+
+			double deltaE = -MC_energy(syst, p);
+			MC_rototraslate_particle(syst, p, disp, new_orient);
+			deltaE += MC_energy(syst, p);
+
+#ifdef DEBUG
+			int p_patch = 0, q_patch = 0;
+			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
+#endif
+
+			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * avbdata->avb_vin / ((avbdata->num_neighbours + 1.) * avbdata->avb_vout);
+
+			if(!syst->overlap && drand48() < acc) {
+				syst->accepted[AVB]++;
+				syst->energy += deltaE;
+			}
+			else {
+				MC_rollback_particle(syst, p);
+			}
+		}
+		// the move will try to take p out out of the bonding volume of receiver
+		else {
+			// we need receiver to have a non-zero number of neighbors in order to take one of them out...
+			if(avbdata->num_neighbours == 0) return;
+
+			// pick a random particle from receiver's neighbors
+			int random_neighbour = (int) (drand48() * avbdata->num_neighbours);
+
+			int cn = 0;
+			int ci = 0;
+			while(cn <= random_neighbour) {
+				if(avbdata->neighbours[ci] != NULL) cn++;
+				ci++;
+			}
+
+			p = avbdata->neighbours[ci - 1];
+
+#ifdef DEBUG
+			int p_patch = 0, q_patch = 0;
+			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
+#endif
+
+			// COLORS ///////////////////////////
+			// some changes here
+			//vector new_r;
+			matrix new_orient;
+			//vector new_patches[syst->n_patches];
+
+			int buff;
+			// choose a random position and a random orientation so that, at the end of the move, p and receiver won't be bonded any more
+			PatchyParticle new_particle;
+			new_particle.specie=p->specie;
+
+			do {
+				new_particle.r[0] = drand48() * syst->box[0];
+				new_particle.r[1] = drand48() * syst->box[1];
+				new_particle.r[2] = drand48() * syst->box[2];
+				random_orientation(syst, new_orient);
+				for(i = 0; i < syst->n_patches; i++) {
+					MATRIX_VECTOR_MULTIPLICATION(new_orient, syst->base_patches[i], new_particle.patches[i]);
+				}
+
+			//} while(MC_would_interact(syst, receiver, new_r, new_patches, &buff, &buff) == PATCH_BOND);
+			} while(MC_interact(syst,receiver,&new_particle,&buff, &buff) == PATCH_BOND);
+
+
+			vector disp = { new_particle.r[0] - p->r[0], new_particle.r[1] - p->r[1], new_particle.r[2] - p->r[2] };
+
+			double deltaE = -MC_energy(syst, p);
+			MC_rototraslate_particle(syst, p, disp, new_orient);
+			deltaE += MC_energy(syst, p);
+
+			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * avbdata->avb_vout / ((syst->N - avbdata->num_neighbours) * avbdata->avb_vin);
+			if(!syst->overlap && drand48() < acc) {
+				syst->accepted[AVB]++;
+				syst->energy += deltaE;
+
+			}
+			else {
+				MC_rollback_particle(syst, p);
+			}
+		}
+	}
+
+}
