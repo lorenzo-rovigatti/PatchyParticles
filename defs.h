@@ -120,6 +120,7 @@ typedef struct System {
 	int **particlescolor; // particlescolor[specie,patch]=color
 	int **color; // color[color,specie]=how many patches of that color
 	int *species_count; // species_count[specie]=how many particles of that specie
+	int **bonding_volume_units;
 	/////////////////////////////////
 
 	// GIBBS  ///////////////////////

@@ -25,6 +25,8 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 
 	avbdata->avb_vin = syst->n_patches * syst->n_patches * (M_PI * (syst->kf_delta * syst->kf_delta * syst->kf_delta + 3. * SQR(syst->kf_delta) + 3. * syst->kf_delta) * SQR(1. - syst->kf_cosmax) / 3.);
 
+	avbdata->avb_vin_per_unit=M_PI * (syst->kf_delta * syst->kf_delta * syst->kf_delta + 3. * SQR(syst->kf_delta) + 3. * syst->kf_delta) * SQR(1. - syst->kf_cosmax) / 3.;
+
 	output_log_msg(IO, "Vavb = %lf\n", avbdata->avb_vin);
 
 	avbdata->avb_vout = syst->V - avbdata->avb_vin;
@@ -223,17 +225,9 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			} while(!found || p == receiver);
 
 			// select which bonding volume to occupy
-			int j;
 			int sr=receiver->specie;
 			int sp=p->specie;
-			int bonding_volume=0;
-			for (i=0;i<receiver->n_patches;i++)
-			{
-				int c=syst->particlescolor[sr][i];
-				int cc=syst->colorint[c];
-				bonding_volume+=syst->color[cc][sp];
-			}
-
+			int bonding_volume=syst->bonding_volume_units[sr][sp];
 			int sel_bv=(int) (drand48() * bonding_volume);
 			int p_p=-1;
 			int p_r=0;
@@ -259,6 +253,12 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 
 			} while (i<sel_bv);
 
+			// early rejection
+			if (avbdata->neighbours[p_r] != NULL)
+			{
+				return;
+			}
+
 			vector new_r;
 			matrix new_orient;
 
@@ -275,7 +275,7 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
-			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * avbdata->avb_vin / ((avbdata->num_neighbours + 1.) * avbdata->avb_vout);
+			double acc = exp(-deltaE / syst->T) * (syst->N - avbdata->num_neighbours - 1.) * bonding_volume*avbdata->avb_vin_per_unit / ((avbdata->num_neighbours + 1.) * (syst->V-bonding_volume*avbdata->avb_vin_per_unit)));
 
 			if(!syst->overlap && drand48() < acc) {
 				syst->accepted[AVB]++;
@@ -307,6 +307,10 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			assert(MC_interact(syst, receiver, p, &p_patch, &q_patch) == PATCH_BOND);
 #endif
 
+			int sr=receiver->specie;
+			int sp=p->specie;
+			int bonding_volume=syst->bonding_volume_units[sr][sp];
+
 			// COLORS ///////////////////////////
 			// some changes here
 			//vector new_r;
@@ -337,7 +341,7 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			MC_rototraslate_particle(syst, p, disp, new_orient);
 			deltaE += MC_energy(syst, p);
 
-			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * avbdata->avb_vout / ((syst->N - avbdata->num_neighbours) * avbdata->avb_vin);
+			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * (syst->V-bonding_volume*avbdata->avb_vin_per_unit) / ((syst->N - avbdata->num_neighbours) * bonding_volume*avbdata->avb_vin_per_unit);
 			if(!syst->overlap && drand48() < acc) {
 				syst->accepted[AVB]++;
 				syst->energy += deltaE;

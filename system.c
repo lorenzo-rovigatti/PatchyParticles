@@ -301,10 +301,33 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->colorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
+
 		syst->species_count=calloc(num_species,sizeof(int));
 
 		system_readColors(colors_name,syst->colorint,syst->particlescolor,syst->color);
 		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles,syst->species_count);
+
+		Matrix2D(syst->bonding_volume_units,num_species,num_species,int);
+
+		int ii,jj;
+		for (ii=0;ii<num_species;i++)
+		{
+			for (jj=0;jj<num_species;jj++)
+			{
+				syst->bonding_volume_units[ii][jj]=0;
+
+				int pi;
+				for (pi=0;pi<syst->n_patches;pi++)
+				{
+
+					int c=syst->particlescolor[ii][pi];
+					int cc=syst->colorint[c];
+					syst->bonding_volume_units[ii][jj]+=syst->color[cc][jj];
+
+				}
+			}
+		}
+
 	}
 	else
 	{
@@ -328,6 +351,8 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			syst->particles[ii].specie=0;
 		}
 
+		Matrix2D(syst->bonding_volume_units,num_species,num_species,int);
+		syst->bonding_volume_units[0][0]+=SQR(syst->n_patches);
 	}
 	//////////////////////////////////////////////
 
@@ -364,6 +389,7 @@ void system_free(System *syst) {
 	free(syst->colorint);
 	Free2D(syst->particlescolor);
 	Free2D(syst->color);
+	Free2D(syst->bonding_volume_units);
 	free(syst->species_count);
 
 }

@@ -36,10 +36,12 @@ void random_vector_on_sphere(vector res);
 void random_orientation(System *syst, matrix orient);
 void get_rotation_matrix(vector axis, double t, matrix rotation_matrix);
 void place_inside_vbonding(System *syst, PatchyParticle *rec, vector r, matrix orient, int rec_patch);
+void place_inside_vbonding_colored(System *syst, PatchyParticle *rec, vector r, matrix orient, int target_patch,int donor_patch);
 void utils_rotate_matrix(matrix orient_old, matrix orient_new, vector axis, double t);
 void get_rotated_vector(vector v, vector axis, double t, vector res);
 void rotate_vector(vector v, vector axis, double t);
 void set_orientation_around_vector(vector v, matrix orient, double t);
+void set_001orientation_around_vector(vector z, matrix orient);
 void gram_schmidt(vector v1, vector v2, vector v3);
 void utils_reset_acceptance_counters(System *syst);
 

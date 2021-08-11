@@ -236,7 +236,7 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		break;
 	case AVBMC:
 		AVBMC_init(input, syst, IO);
-		syst->do_dynamics = &AVBMC_dynamics;
+		syst->do_dynamics = &AVBMC_dynamics_colors;
 		break;
 	default:
 		output_exit(IO, "Dynamics %d not supported\n", syst->dynamics);
