@@ -228,6 +228,13 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			int sr=receiver->specie;
 			int sp=p->specie;
 			int bonding_volume=syst->bonding_volume_units[sr][sp];
+
+			// early rejection
+			if (bonding_volume==0)
+			{
+				return;
+			}
+
 			int sel_bv=(int) (drand48() * bonding_volume);
 			int p_p=-1;
 			int p_r=0;
