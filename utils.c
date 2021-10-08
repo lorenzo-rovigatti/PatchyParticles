@@ -131,11 +131,43 @@ void random_vector_on_sphere(vector res) {
 }
 
 void random_orientation(System *syst, matrix orient) {
-	vector axis;
-	random_vector_on_sphere(axis);
-	double t = drand48() * 2 * M_PI;
-	get_rotation_matrix(axis, t, orient);
+
+        vector x,y,z;
+
+        random_vector_on_sphere(x);
+        random_vector_on_sphere(y);
+        random_vector_on_sphere(z);
+
+        // orthonormalize
+        gram_schmidt(x,y,z);
+
+
+
+        orient[0][0] = z[0];
+        orient[0][1] = z[1];
+        orient[0][2] = z[2];
+
+        orient[1][0] = x[0];
+        orient[1][1] = x[1];
+        orient[1][2] = x[2];
+
+        orient[2][0] = y[0];
+        orient[2][1] = y[1];
+        orient[2][2] = y[2];
+
+        // rotations have det(R) == 1
+        if(determinant(orient) < 0) {
+                orient[0][0] = x[0];
+                orient[0][1] = x[1];
+                orient[0][2] = x[2];
+
+                orient[1][0] = z[0];
+                orient[1][1] = z[1];
+                orient[1][2] = z[2];
+        }
+
 }
+
 
 void matrix_matrix_multiplication(matrix m, matrix n, matrix res) {
 	res[0][0] = m[0][0]*n[0][0] + m[0][1]*n[1][0] + m[0][2]*n[2][0];
@@ -248,4 +280,3 @@ void utils_reset_acceptance_counters(System *syst) {
 		syst->accepted[i] = 0;
 	}
 }
-
