@@ -1114,7 +1114,8 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 
 		double energy_1 = MC_energy(systa, pa);
 		double volume_1=(systa->box[0]*systa->box[1]*systa->box[2]);
-		int particle_1=1+systa->N;
+		//int particle_1=1+systa->N;
+		int particle_1=1+systa->species_count[s];
 
 		if (!systa->overlap)
 		{
@@ -1134,7 +1135,8 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 
 			double energy_2 = -MC_energy(systb, pr);
 			double volume_2=(systb->box[0]*systb->box[1]*systb->box[2]);
-			int particle_2=systb->N;
+			//int particle_2=systb->N;
+			int particle_2=systb->species_count[s];
 
 			double acceptance=(particle_2*volume_1/(particle_1*volume_2))*exp(-(energy_1+energy_2)/systa->T);
 
