@@ -298,13 +298,14 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->num_species=num_species;
 		syst->num_colors=num_colors;
 
-		syst->colorint=calloc(num_colors,sizeof(int));
+		Matrix2D(syst->colorint,num_colors,num_colors,int);
+		syst->ncolorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
 
 		syst->species_count=calloc(num_species,sizeof(int));
 
-		system_readColors(colors_name,syst->colorint,syst->particlescolor,syst->color);
+		system_readColors(colors_name,syst->colorint,syst->ncolorint,syst->particlescolor,syst->color);
 		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles,syst->species_count);
 
 		Matrix2D(syst->bonding_volume_units,num_species,num_species,int);
@@ -321,9 +322,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 				{
 
 					int c=syst->particlescolor[ii][pi];
-					int cc=syst->colorint[c];
-					syst->bonding_volume_units[ii][jj]+=syst->color[cc][jj];
-
+					int k;
+					for (k=0;k<syst->ncolorint[c];k++)
+					{
+						int cc=syst->colorint[c][k];
+						syst->bonding_volume_units[ii][jj]+=syst->color[cc][jj];
+					}
 				}
 			}
 		}
@@ -335,12 +339,14 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		num_colors=1;
 		syst->num_species=1;
 		syst->num_colors=1;
-		syst->colorint=calloc(num_colors,sizeof(int));
+		Matrix2D(syst->colorint,num_colors,num_colors,int);
+		syst->ncolorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
 		syst->species_count=calloc(num_species,sizeof(int));
 
-		syst->colorint[0]=0;
+		syst->colorint[0][0]=0;
+		syst->ncolorint[0]=1;
 		syst->particlescolor[0][0]=0;
 		syst->color[0][0]=syst->n_patches;
 		syst->species_count[0]=syst->N;
@@ -386,7 +392,8 @@ void system_free(System *syst) {
 		free(syst->bsus_pm);
 	}
 
-	free(syst->colorint);
+	free(syst->ncolorint);
+	Free2D(syst->colorint);
 	Free2D(syst->particlescolor);
 	Free2D(syst->color);
 	Free2D(syst->bonding_volume_units);
@@ -451,7 +458,7 @@ void system_readColorsMax(char *namefile,int *max_species,int *max_colors)
 }
 
 
-void system_readColors(char *namefile,int *colorint,int **particle,int **color)
+void system_readColors(char *namefile,int **colorint,int *ncolorint,int **particle,int **color)
 {
 
 	char line[MAX_LINE_LENGTH]="";
@@ -476,8 +483,10 @@ void system_readColors(char *namefile,int *colorint,int **particle,int **color)
 
 			int c2=atoi(buffer);
 
-			colorint[c1]=c2;
-			colorint[c2]=c1;
+			colorint[c1][ncolorint[c1]]=c2;
+			ncolorint[c1]++;
+			colorint[c2][ncolorint[c2]]=c1;
+			ncolorint[c2]++;
 
 		}
 		else if (line[0]=='C')

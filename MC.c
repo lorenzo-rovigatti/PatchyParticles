@@ -365,17 +365,22 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches
 
 			if(p_cos > syst->kf_cosmax) {
 				int p_color=syst->particlescolor[p->specie][pp];
-				int q_color=syst->colorint[p_color];
 
-				for(pq = 0; pq < syst->n_patches; pq++) {
+				int kk;
+				for (kk=0;kk<syst->ncolorint[p_color];kk++)
+				{
+					int q_color=syst->colorint[p_color][kk];
 
-					if (syst->particlescolor[specie][pq]==q_color)
-					{
-						double q_cos = -SCALAR(dist, patches[pq]);
-						if(q_cos > syst->kf_cosmax) {
-							*onp = pp;
-							*onq = pq;
-							return PATCH_BOND;
+					for(pq = 0; pq < syst->n_patches; pq++) {
+
+						if (syst->particlescolor[specie][pq]==q_color)
+						{
+							double q_cos = -SCALAR(dist, patches[pq]);
+							if(q_cos > syst->kf_cosmax) {
+								*onp = pp;
+								*onq = pq;
+								return PATCH_BOND;
+							}
 						}
 					}
 				}

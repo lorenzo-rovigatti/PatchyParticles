@@ -240,7 +240,7 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			int p_r=0;
 			i=-1;
 			int c=syst->particlescolor[sr][p_r];
-			int cc=syst->colorint[c];
+			//int cc=syst->colorint[c];
 
 			do{
 
@@ -252,11 +252,20 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 					p_r++;
 
 					c=syst->particlescolor[sr][p_r];
-					cc=syst->colorint[c];
+					//cc=syst->colorint[c];
 				}
 
-				if (syst->particlescolor[sp][p_p]==cc)
-					i++;
+				int kk;
+				for (kk=0;kk<syst->ncolorint[c];kk++)
+				{
+					int cc=syst->colorint[c][kk];
+
+					if (syst->particlescolor[sp][p_p]==cc)
+						i++;
+
+					if (i==sel_bv)
+						break;
+				}
 
 			} while (i<sel_bv);
 
