@@ -485,8 +485,12 @@ void system_readColors(char *namefile,int **colorint,int *ncolorint,int **partic
 
 			colorint[c1][ncolorint[c1]]=c2;
 			ncolorint[c1]++;
-			colorint[c2][ncolorint[c2]]=c1;
-			ncolorint[c2]++;
+
+			if (c1!=c2)
+			{
+				colorint[c2][ncolorint[c2]]=c1;
+				ncolorint[c2]++;
+			}
 
 		}
 		else if (line[0]=='C')
