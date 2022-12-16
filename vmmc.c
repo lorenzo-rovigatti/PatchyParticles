@@ -196,9 +196,6 @@ void _move_particle(System * syst, PatchyParticle * p, vector move, double t) {
 		dr_tmp[0] = p->r[0] - seed->r[0];
 		dr_tmp[1] = p->r[1] - seed->r[1];
 		dr_tmp[2] = p->r[2] - seed->r[2];
-		dr_tmp[0] -= syst->box[0] * rint(dr_tmp[0] / syst->box[0]);
-		dr_tmp[1] -= syst->box[1] * rint(dr_tmp[1] / syst->box[1]);
-		dr_tmp[2] -= syst->box[2] * rint(dr_tmp[2] / syst->box[2]);
 		MATRIX_VECTOR_MULTIPLICATION(vmmcdata->rotation, dr_tmp, dr);
 		p->r[0] = seed->r[0] + dr[0];
 		p->r[1] = seed->r[1] + dr[1];
@@ -307,6 +304,14 @@ void VMMC_dynamics(System *syst, Output *output_files) {
 				// we recruit q
 				vmmcdata->is_in_cluster[q->index] = 1;
 				vmmcdata->clust[vmmcdata->n_clust] = q;
+				// we pick the image of q that is closest to p
+				vector dist = {q->r[0] - p->r[0], q->r[1] - p->r[1], q->r[2] - p->r[2]};
+				dist[0] -= syst->box[0] * rint(dist[0] / syst->box[0]);
+				dist[1] -= syst->box[1] * rint(dist[1] / syst->box[1]);
+				dist[2] -= syst->box[2] * rint(dist[2] / syst->box[2]);
+				q->r[0] = p->r[0] + dist[0];
+				q->r[1] = p->r[1] + dist[1];
+				q->r[2] = p->r[2] + dist[2];
 				vmmcdata->n_clust++;
 
 				// we expand the list of possible links
