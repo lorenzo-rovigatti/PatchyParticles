@@ -71,6 +71,44 @@ void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	}
 }
 
+
+void _init_distorted_tetrahedral_patches(System *syst, Output *output_files,double angle_a,double angle_d) {
+	syst->n_patches = 4;
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	
+	set_vector(syst->base_patches[0], -sin(angle_a)/sqrt(2), -sin(angle_a)/sqrt(2),  cos(angle_a));
+	set_vector(syst->base_patches[1], sin(angle_d)/sqrt(2), -sin(angle_d)/sqrt(2), -cos(angle_d));
+	set_vector(syst->base_patches[2], sin(angle_a)/sqrt(2),  sin(angle_a)/sqrt(2),  cos(angle_a));
+	set_vector(syst->base_patches[3], -sin(angle_d)/sqrt(2),  sin(angle_d)/sqrt(2), -cos(angle_d));
+
+	int i, j;
+	for(i = 0; i < syst->n_patches; i++) normalize(syst->base_patches[i]);
+
+	// now we need to initialize syst->base_orient
+	// first we initialize my_orient as the identity matrix
+	// and we get -syst->base_patches[0], because the
+	// set_orientation_around_vector invert its first argument
+	matrix my_orient;
+	vector my_first_patch;
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) {
+			memset(my_orient[i], 0, 3 * sizeof(double));
+			my_orient[i][i] = 1.;
+		}
+		my_first_patch[i] = -syst->base_patches[0][i];
+	}
+	// then we calculate the rotation matrix required to transform
+	// the 0, 0, 1 vector to the syst->base_patches[0] one
+	set_orientation_around_vector(my_first_patch, my_orient, 0);
+	// and then we transpose that matrix to obtain the rotation
+	// needed to transform the syst->base_patches[0] vector
+	// into the 0, 0, 1 one
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) syst->base_orient[i][j] = my_orient[j][i];
+	}
+}
+
+
 void system_init(input_file *input, System *syst, Output *output_files) {
 	int res, i;
 
@@ -241,7 +279,27 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	_init_tetrahedral_patches(syst, output_files);
+	int distortion;
+	int distortion_value=getInputInt(input, "Distorted_tetrahedra", &distortion, 0);
+
+	if ((distortion_value==KEY_NOT_FOUND) || (distortion==0))
+	{
+		output_log_msg(output_files, "Tetrahedral system\n");
+		_init_tetrahedral_patches(syst, output_files);
+	}
+	else
+	{
+		double distortion_angle_donor,distortion_angle_acceptor;
+
+		getInputDouble(input,"Distortion_angle_donor",&distortion_angle_donor,1);
+		getInputDouble(input,"Distortion_angle_acceptor",&distortion_angle_acceptor,1);
+
+		output_log_msg(output_files, "Distorted tetrahedral system with angles %lf and %lf\n",180*distortion_angle_acceptor/M_PI,180*distortion_angle_donor/M_PI);
+
+		_init_distorted_tetrahedral_patches(syst, output_files,distortion_angle_acceptor,distortion_angle_donor);
+	}
+
+	
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
