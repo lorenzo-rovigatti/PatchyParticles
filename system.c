@@ -69,6 +69,9 @@ void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	for(i = 0; i < 3; i++) {
 		for(j = 0; j < 3; j++) syst->base_orient[i][j] = my_orient[j][i];
 	}
+
+	//syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+
 }
 
 
@@ -81,6 +84,45 @@ void _init_distorted_tetrahedral_patches(System *syst, Output *output_files,doub
 	set_vector(syst->base_patches[2], sin(angle_a)/sqrt(2),  sin(angle_a)/sqrt(2),  cos(angle_a));
 	set_vector(syst->base_patches[3], -sin(angle_d)/sqrt(2),  sin(angle_d)/sqrt(2), -cos(angle_d));
 
+	int i, j;
+	for(i = 0; i < syst->n_patches; i++) normalize(syst->base_patches[i]);
+
+	// now we need to initialize syst->base_orient
+	// first we initialize my_orient as the identity matrix
+	// and we get -syst->base_patches[0], because the
+	// set_orientation_around_vector invert its first argument
+	matrix my_orient;
+	vector my_first_patch;
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) {
+			memset(my_orient[i], 0, 3 * sizeof(double));
+			my_orient[i][i] = 1.;
+		}
+		my_first_patch[i] = -syst->base_patches[0][i];
+	}
+	// then we calculate the rotation matrix required to transform
+	// the 0, 0, 1 vector to the syst->base_patches[0] one
+	set_orientation_around_vector(my_first_patch, my_orient, 0);
+	// and then we transpose that matrix to obtain the rotation
+	// needed to transform the syst->base_patches[0] vector
+	// into the 0, 0, 1 one
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 3; j++) syst->base_orient[i][j] = my_orient[j][i];
+	}
+}
+
+void _init_frog_model(System *syst, Output *output_files) {
+	syst->n_patches = 5;
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	double half_isqrt3 = 0.5 / sqrt(3);
+	set_vector(syst->base_patches[0], -half_isqrt3, -half_isqrt3,  half_isqrt3);
+	set_vector(syst->base_patches[1], half_isqrt3, -half_isqrt3, -half_isqrt3);
+	set_vector(syst->base_patches[2], half_isqrt3,  half_isqrt3,  half_isqrt3);
+	set_vector(syst->base_patches[3], -half_isqrt3,  half_isqrt3, -half_isqrt3);
+	
+	// frog patch
+	set_vector(syst->base_patches[4], 0.,  half_isqrt3, 0.);
+	
 	int i, j;
 	for(i = 0; i < syst->n_patches; i++) normalize(syst->base_patches[i]);
 
@@ -144,12 +186,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	res = fscanf(conf, "%*d %d %lf %lf %lf\n", &syst->N, syst->box, syst->box + 1, syst->box + 2);
 	if(res != 4) output_exit(output_files, "The initial configuration file '%s' is empty or its headers are malformed\n", name);
 
-	getInputDouble(input, "KF_delta", &syst->kf_delta, 1);
-	getInputDouble(input, "KF_cosmax", &syst->kf_cosmax, 1);
-
-	syst->kf_sqr_rcut = SQR(1. + syst->kf_delta);
-
-	output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", syst->kf_cosmax, syst->kf_delta);
+	
 
 	if(syst->ensemble == SUS || syst->ensemble == GC || syst->ensemble == BSUS) {
 		getInputDouble(input, "Activity", &syst->z, 1);
@@ -279,16 +316,44 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->energy = 0;
 	syst->overlap = 0;
 
-	int distortion;
-	int distortion_value=getInputInt(input, "Distorted_tetrahedra", &distortion, 0);
+	int model;
+	int model_value=getInputInt(input, "Distorted_tetrahedra", &model, 0);
 
-	if ((distortion_value==KEY_NOT_FOUND) || (distortion==0))
+	syst->kf_cosmax_pp=calloc(syst->n_patches,sizeof(double));
+	syst->kf_delta_pp=calloc(syst->n_patches,sizeof(double));
+	syst->kf_sqr_rcut_pp=calloc(syst->n_patches,sizeof(double));
+
+	if ((model_value==KEY_NOT_FOUND) || (model==0))
 	{
 		output_log_msg(output_files, "Tetrahedral system\n");
+
 		_init_tetrahedral_patches(syst, output_files);
+
+		// model parameters
+		double cosmax,delta;
+		getInputDouble(input, "KF_delta", &delta, 1);
+		getInputDouble(input, "KF_cosmax", &cosmax, 1);
+
+		syst->kf_cosmax=cosmax;
+		syst->kf_delta=delta;
+
+		int j;
+		for (j=0;j<syst->n_patches;j++)
+		{
+			syst->kf_cosmax_pp[j]=cosmax;
+			syst->kf_delta_pp[j]=delta;
+			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+		}
+
+		
+
+		output_log_msg(output_files, "Patch parameters: cosmax = %lf, delta = %lf\n", cosmax, delta);
+
 	}
-	else
+	else if (model==1)
 	{
+		// distorted tetrahedra
+	
 		double distortion_angle_donor,distortion_angle_acceptor;
 
 		getInputDouble(input,"Distortion_angle_donor",&distortion_angle_donor,1);
@@ -297,7 +362,61 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		output_log_msg(output_files, "Distorted tetrahedral system with angles %lf and %lf\n",180*distortion_angle_acceptor/M_PI,180*distortion_angle_donor/M_PI);
 
 		_init_distorted_tetrahedral_patches(syst, output_files,distortion_angle_acceptor,distortion_angle_donor);
+
+		// model parameters
+		double cosmax,delta;
+		getInputDouble(input, "KF_delta", &delta, 1);
+		getInputDouble(input, "KF_cosmax", &cosmax, 1);
+
+		syst->kf_cosmax=cosmax;
+		syst->kf_delta=delta;
+
+		int j;
+		for (j=0;j<syst->n_patches;j++)
+		{
+			syst->kf_cosmax_pp[j]=cosmax;
+			syst->kf_delta_pp[j]=delta;
+			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+		}
+		
 	}
+	else if (model==2)
+	{
+		// frog model
+		output_log_msg(output_files, "Frog model\n");
+
+		_init_frog_model(syst,output_files);
+		
+		// model parameters
+		double cosmax,delta,cosmax_frog;
+		getInputDouble(input, "KF_delta", &delta, 1);
+		getInputDouble(input, "KF_cosmax", &cosmax, 1);
+		getInputDouble(input, "KF_cosmax_frog", &cosmax_frog, 1);
+
+		syst->kf_cosmax=cosmax;
+		syst->kf_delta=delta;
+
+		int j;
+		for (j=0;j<4;j++)
+		{
+			syst->kf_cosmax_pp[j]=cosmax;
+			syst->kf_delta_pp[j]=delta;
+			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+		}
+		
+		//  frog patch
+		syst->kf_cosmax[4]=cosmax_frog;
+		syst->kf_delta[4]=delta;
+		syst->kf_sqr_rcut[4] = SQR(1. + delta);
+
+	}
+	else
+	{
+		output_log_msg(output_files, "Invalid model number\n");
+		exit(1);
+	}
+
+
 
 	
 	for(i = 0; i < syst->N_max; i++) {
@@ -307,6 +426,10 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		p->n_patches = syst->n_patches;
 		p->patches = malloc(sizeof(vector) * p->n_patches);
 		p->base_patches = syst->base_patches;
+
+		p->kf_delta=syst->kf_delta_pp;
+		p->kf_cosmax=syst->kf_cosmax_pp;
+		p->kf_sqr_rcut=syst->kf_sqr_rcut_pp;
 	}
 
 	i = 0;
@@ -456,6 +579,10 @@ void system_free(System *syst) {
 	Free2D(syst->color);
 	Free2D(syst->bonding_volume_units);
 	free(syst->species_count);
+
+	free(syst->kf_cosmax);
+	free(syst->kf_delta);
+	free(syst->kf_sqr_rcut);
 
 }
 
