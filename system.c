@@ -319,9 +319,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	int model;
 	int model_value=getInputInt(input, "Distorted_tetrahedra", &model, 0);
 
-	syst->kf_cosmax_pp=calloc(syst->n_patches,sizeof(double));
-	syst->kf_delta_pp=calloc(syst->n_patches,sizeof(double));
-	syst->kf_sqr_rcut_pp=calloc(syst->n_patches,sizeof(double));
+	syst->kf_cosmax=calloc(syst->n_patches,sizeof(double));
+	syst->kf_delta=calloc(syst->n_patches,sizeof(double));
+	//syst->kf_sqr_rcut=calloc(syst->n_patches,sizeof(double));
 
 	if ((model_value==KEY_NOT_FOUND) || (model==0))
 	{
@@ -334,15 +334,16 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		getInputDouble(input, "KF_delta", &delta, 1);
 		getInputDouble(input, "KF_cosmax", &cosmax, 1);
 
-		syst->kf_cosmax=cosmax;
-		syst->kf_delta=delta;
+		syst->avb_kf_cosmax=cosmax;
+		syst->avb_kf_delta=delta;
+		//syst->avb_kf_sqr_rcut = SQR(1. + delta);
 
 		int j;
 		for (j=0;j<syst->n_patches;j++)
 		{
-			syst->kf_cosmax_pp[j]=cosmax;
-			syst->kf_delta_pp[j]=delta;
-			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+			syst->kf_cosmax[j]=cosmax;
+			syst->kf_delta[j]=delta;
+			//syst->kf_sqr_rcut[j] = SQR(1. + delta);
 		}
 
 		
@@ -368,15 +369,16 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		getInputDouble(input, "KF_delta", &delta, 1);
 		getInputDouble(input, "KF_cosmax", &cosmax, 1);
 
-		syst->kf_cosmax=cosmax;
-		syst->kf_delta=delta;
+		syst->avb_kf_cosmax=cosmax;
+		syst->avb_kf_delta=delta;
+		//syst->avb_kf_sqr_rcut = SQR(1. + delta);
 
 		int j;
 		for (j=0;j<syst->n_patches;j++)
 		{
-			syst->kf_cosmax_pp[j]=cosmax;
-			syst->kf_delta_pp[j]=delta;
-			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+			syst->kf_cosmax[j]=cosmax;
+			syst->kf_delta[j]=delta;
+			//syst->kf_sqr_rcut[j] = SQR(1. + delta);
 		}
 		
 	}
@@ -393,21 +395,22 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		getInputDouble(input, "KF_cosmax", &cosmax, 1);
 		getInputDouble(input, "KF_cosmax_frog", &cosmax_frog, 1);
 
-		syst->kf_cosmax=cosmax;
-		syst->kf_delta=delta;
+		syst->avb_kf_cosmax=cosmax;
+		syst->avb_kf_delta=delta;
+		//syst->avb_kf_sqr_rcut = SQR(1. + delta);
 
 		int j;
 		for (j=0;j<4;j++)
 		{
-			syst->kf_cosmax_pp[j]=cosmax;
-			syst->kf_delta_pp[j]=delta;
-			syst->kf_sqr_rcut_pp[j] = SQR(1. + delta);
+			syst->kf_cosmax[j]=cosmax;
+			syst->kf_delta[j]=delta;
+			//syst->kf_sqr_rcut[j] = SQR(1. + delta);
 		}
 		
 		//  frog patch
 		syst->kf_cosmax[4]=cosmax_frog;
 		syst->kf_delta[4]=delta;
-		syst->kf_sqr_rcut[4] = SQR(1. + delta);
+		//syst->kf_sqr_rcut[4] = SQR(1. + delta);
 
 	}
 	else
@@ -427,9 +430,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		p->patches = malloc(sizeof(vector) * p->n_patches);
 		p->base_patches = syst->base_patches;
 
-		p->kf_delta=syst->kf_delta_pp;
-		p->kf_cosmax=syst->kf_cosmax_pp;
-		p->kf_sqr_rcut=syst->kf_sqr_rcut_pp;
+		p->kf_delta=syst->kf_delta;
+		p->kf_cosmax=syst->kf_cosmax;
+		p->kf_sqr_rcut=syst->kf_sqr_rcut;
 	}
 
 	i = 0;
@@ -545,7 +548,9 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	utils_reset_acceptance_counters(syst);
 
-	syst->r_cut = 1. + syst->kf_delta;
+	// cells
+	//syst->r_cut = 1. + syst->kf_delta;
+	getInputDouble(input,"Cells_cutoff",&syst->r_cut,1);
 	cells_init(syst, output_files, syst->r_cut);
 	cells_fill(syst);
 }

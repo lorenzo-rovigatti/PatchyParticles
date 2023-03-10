@@ -59,7 +59,7 @@ typedef struct PatchyParticle {
 
 	double *kf_delta;
 	double *kf_cosmax;
-	double *kf_sqr_rcut;
+	//double *kf_sqr_rcut;
 
 } PatchyParticle;
 
@@ -110,14 +110,16 @@ typedef struct System {
 	double Lyz_min;
 	double Lyz_max;
 
-	// these are kept for compatibility reasons
-	// kf_delta is used by the avb module, which needs to be modified to allow for patches with different parameters
-	// kf_delta_pp is the parameter per patch
-	double kf_delta, kf_cosmax, kf_sqr_rcut;
-	double *kf_delta_pp;
-	double *kf_cosmax_pp;
-	double *kf_sqr_rcut_pp;
+	
+	// AVB module (for) now supports only patches with the same parameters
+	double avb_kf_delta, avb_kf_cosmax; //, avb_kf_sqr_rcut;
+	
+	// this is the global memory where values are stored. The variables in PatchyParticles point here
+	double *kf_delta;
+	double *kf_cosmax;
+	//double *kf_sqr_rcut;
 
+	// cells cutoff
 	double r_cut;
 
 	Cells *cells;

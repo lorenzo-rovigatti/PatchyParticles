@@ -343,11 +343,13 @@ void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vect
 	MC_change_cell(syst, p);
 }
 
-int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches,int specie, int *onp, int *onq) {
+int MC_would_interact(System *syst, PatchyParticle *p, vector r, vector *patches,int specie, int *onp, int *onq, double delta) {
 	vector dist = {r[0] - p->r[0], r[1] - p->r[1], r[2] - p->r[2]};
 	dist[0] -= syst->box[0] * rint(dist[0] / syst->box[0]);
 	dist[1] -= syst->box[1] * rint(dist[1] / syst->box[1]);
 	dist[2] -= syst->box[2] * rint(dist[2] / syst->box[2]);
+
+	double kf_sqr_rcut=1.+0.5*();
 
 	double dist2 = SCALAR(dist, dist);
 
