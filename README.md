@@ -20,7 +20,7 @@ The code can be compiled with icc with the command
 	
 The default behaviour is to compile `PatchyParticles` with full optimisations enabled (that is, with the options `-O3 -ffast-math -DNDEBUG` or `-fast -DNDEBUG` if the code is compiled with gcc or icc, respectively). The code can also be compiled with optimisations and debug flags (`make g=1`) or with debug flags only (`make dbg=1`).
 
-At the end of the compilation stage there will be two executables: `PatchyParticles` and `generator`.
+At the end of the compilation stage there will be two executables: `PatchyParticles` and `generator`. Note that if you don't use `dbg=1`, by default the `-march=native` flag is used. If you want to compile and run the code on computers with different architectures, remove that flag from the makefile.
 
 ## Usage
 

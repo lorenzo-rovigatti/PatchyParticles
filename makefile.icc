@@ -1,6 +1,6 @@
 # ----- COMPILER -----#
 CC = icc
-OPTIMIZATION_FLAGS = -fast
+OPTIMIZATION_FLAGS = -fast -march=native
 DBG_FLAGS = -O0 -g2 -pg -gdwarf-3
 G_FLAGS = -g2 -pg -gdwarf-3
 MAKEFILE_NAME = makefile.icc
