@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 				MC_check_energy(&syst, &output_files);
 				cells_check(&syst, &output_files);
 
-				//if(syst.ensemble == SUS) output_sus(&output_files, &syst, curr_step);
+				if(syst.ensemble == SUS) output_and_reset_sus(&output_files, &syst, curr_step);
 
 				if(syst.ensemble == BSUS) bsus_update_histo(&syst);
 			}
@@ -108,8 +108,7 @@ int main(int argc, char *argv[]) {
 				output_save_to_mgl(&output_files, &syst, "last.mgl");
 
 			}
-			if(syst.ensemble == BSUS)
-			{
+			if(syst.ensemble == BSUS) {
 				output_bsus(&output_files, &syst, curr_step);
 			}
 		}

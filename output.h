@@ -38,7 +38,7 @@ void output_free(Output *output_files);
 
 void output_sus(Output *IO, System *syst, llint step);
 void output_bsus(Output *IO, System *syst, llint step);
-void output_e_sus(Output *IO, System *syst, llint step);
+void output_and_reset_sus(Output *IO, System *syst, llint step);
 void output_save(Output *IO, System *syst, llint step, char *name);
 void output_print(Output *IO, System *syst, llint step);
 void output_log_msg(Output *IO, char *format, ...);

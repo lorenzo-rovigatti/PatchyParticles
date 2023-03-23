@@ -318,7 +318,7 @@ void output_save(Output *output_files, System *syst, llint step, char *name) {
 
 
 void output_bsus(Output *IO, System *syst, llint step) {
-	char name[512];
+	char name[1024];
 	sprintf(name, "%s/bsus-%lld.dat", IO->sus_folder, step);
 	FILE *out = fopen(name, "w");
 	FILE *outlast=fopen("last_bsus.dat","w");
@@ -340,12 +340,11 @@ void output_bsus(Output *IO, System *syst, llint step) {
 	fclose(outhisto);
 }
 
-/*
-void output_e_sus(Output *IO, System *syst, llint step) {
-	char name[512];
-	sprintf(name, "%s/sus-%lld.dat", output_files->sus_folder, step);
+void output_and_reset_sus(Output *IO, System *syst, llint step) {
+	char name[1024];
+	sprintf(name, "%s/sus-%lld.dat", IO->sus_folder, step);
 	FILE *out = fopen(name, "w");
-	if(out == NULL) output_exit(output_files, "SUS file '%s' is not writable\n", name);
+	if(out == NULL) output_exit(IO, "SUS file '%s' is not writable\n", name);
 
 	int i;
 	for(i = 0; i < (syst->N_max - syst->N_min + 1); i++) {
@@ -355,7 +354,7 @@ void output_e_sus(Output *IO, System *syst, llint step) {
 
 	fclose(out);
 }
-*/
+
 
 void output_log_msg(Output *output_files, char *format, ...) {
 	va_list args;
