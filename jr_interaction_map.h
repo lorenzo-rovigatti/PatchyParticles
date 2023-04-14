@@ -9,7 +9,7 @@ typedef struct _interactionmap {
 	int num_bonds;
 	int size;		// total number of particles
 	double **rij2;
-	vector **rij;
+	jvector **rij;
 } interactionmap;
 
 interactionmap* createInteractionMap(int max_elements,int max_neighbours);

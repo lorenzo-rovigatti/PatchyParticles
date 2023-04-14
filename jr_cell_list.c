@@ -6,7 +6,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#include "vector.h"
+#include "jvector.h"
 #include "interaction_map.h"
 #include "global_definitions.h"
 #include "secure_search.h"
@@ -18,7 +18,7 @@
 
 void celllistGetInteractionMap(args *argv,int argc);
 
-void celllistConstructor(FILE *config_file,vector *pos,int *ncolloids,vector *box,double *cutoff,interactionmap *interactionList,double *cellsize,
+void celllistConstructor(FILE *config_file,jvector *pos,int *ncolloids,jvector *box,double *cutoff,interactionmap *interactionList,double *cellsize,
 			 listcell **list,void (**getInteractionMap)(args *argv,int argc),args **interactionMapArguments,int *numinteractionargs)
 {
 	SearchTable *s=searchNew();
@@ -47,9 +47,9 @@ void celllistConstructor(FILE *config_file,vector *pos,int *ncolloids,vector *bo
 void celllistGetInteractionMap(args *argv,int argc)
 {
 	// lettura degli argomenti
-	vector *pos=(vector*)argv[0].argv;
+	jvector *pos=(jvector*)argv[0].argv;
 	int ncolloids=*((int*)argv[1].argv);
-	vector *box=(vector*)argv[2].argv;
+	jvector *box=(jvector*)argv[2].argv;
 	interactionmap *im=(interactionmap *)argv[3].argv;
 	double cellsize=*((double*)argv[4].argv);
 	listcell *list=(listcell*)argv[5].argv;
@@ -80,7 +80,7 @@ static int module(int n,int mo)
 	return n;
 }
 
-listcell* getList(vector box_sides,double cutoff,int num_particles)
+listcell* getList(jvector box_sides,double cutoff,int num_particles)
 {
 	listcell *l=malloc(sizeof(listcell));
 
@@ -111,7 +111,7 @@ void freeList(listcell *l)
 	free(l);
 }
 
-void updateList(listcell *l,const vector *pos,int num)
+void updateList(listcell *l,const jvector *pos,int num)
 {
 	int i;
 	int ncell;                       // cell number
@@ -145,7 +145,7 @@ void updateList(listcell *l,const vector *pos,int num)
 
 }
 
-void fullUpdateList(listcell *l,const vector *pos,int num,vector box_sides,double cutoff)
+void fullUpdateList(listcell *l,const jvector *pos,int num,jvector box_sides,double cutoff)
 {
 	int i;
 	int ncell;                       // cell number
@@ -372,7 +372,7 @@ void calculateInteractionMap(listcell *l,interactionmap *im)
 	assert(number_particles==im->size);
 }
 
-static void insertionSort_dist2dist(int *number,int num_el,double *dist2,double dist2_el,vector *dist,vector dist_el,int *length)
+static void insertionSort_dist2dist(int *number,int num_el,double *dist2,double dist2_el,jvector *dist,jvector dist_el,int *length)
 {
 	int l=*length;
 	number[l]=num_el;
@@ -391,7 +391,7 @@ static void insertionSort_dist2dist(int *number,int num_el,double *dist2,double 
 		number[l]=number[l-1];
 		number[l-1]=buffer_num;
 
-		vector buffer_dist;
+		jvector buffer_dist;
 		buffer_dist=dist[l];
 		dist[l]=dist[l-1];
 		dist[l-1]=buffer_dist;
@@ -402,7 +402,7 @@ static void insertionSort_dist2dist(int *number,int num_el,double *dist2,double 
 	(*length)++;
 }
 
-int calculateSystemInteractionMap(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff)
+int calculateSystemInteractionMap(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff)
 {
 	int i;
 	int nn,nnn;                      // Number of cells on surface and in box
@@ -450,7 +450,7 @@ int calculateSystemInteractionMap(listcell *l,interactionmap *im,vector *pos,vec
 			im->who[particle1]=particle1;
 			number_particles++;
 			int howmany_particle1=0;
-			vector dist;
+			jvector dist;
 			double dist2;
 
 			// 0 same cell
@@ -807,7 +807,7 @@ int calculateSystemInteractionMap(listcell *l,interactionmap *im,vector *pos,vec
 	return max_neighbours;
 }
 
-int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff)
+int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff)
 {
 	int i;
 	int nn,nnn;                      // Number of cells on surface and in box
@@ -855,7 +855,7 @@ int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,vector *
 			im->who[particle1]=particle1;
 			number_particles++;
 			//int howmany_particle1=0;
-			vector dist;
+			jvector dist;
 			double dist2;
 
 			// 0 same cell
@@ -1327,7 +1327,7 @@ int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,vector *
 
 
 
-void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff)
+void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff)
 {
 	int i;
 	int nn,nnn;                      // Number of cells on surface and in box
@@ -1372,7 +1372,7 @@ void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,ve
 			im->who[particle1]=particle1;
 			number_particles++;
 			int howmany_particle1=0;
-			vector dist;
+			jvector dist;
 			double dist2;
 
 			// 0 same cell
@@ -1707,7 +1707,7 @@ void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,ve
 }
 
 
-void calculateExtendedInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,interactionmap *ime,vector *pos,vector *box,double cutoff)
+void calculateExtendedInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,interactionmap *ime,jvector *pos,jvector *box,double cutoff)
 {
 	int i;
 	int nn,nnn;                      // Number of cells on surface and in box
@@ -1757,7 +1757,7 @@ void calculateExtendedInteractionMapWithCutoffDistance(listcell *l,interactionma
 			ime->who[particle1]=particle1;
 			int howmany_particle1=0;
 			number_particles++;
-			vector dist;
+			jvector dist;
 			double dist2;
 
 			// 0 same cell
@@ -2179,7 +2179,7 @@ static void insertionSort_dist2(int *number,int num_el,double *dist2,double dist
 
 
 
-void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap *ime,vector *pos,vector *box,double cutoff)
+void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap *ime,jvector *pos,jvector *box,double cutoff)
 {
 
 	int i;
@@ -2235,7 +2235,7 @@ void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap
 			// and in neighbouring cells
 			ime->who[particle1]=particle1;
 			number_particles++;
-			vector dist;
+			jvector dist;
 			double dist2;
 
 			// 0 same cell
@@ -2602,7 +2602,7 @@ void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap
 
 
 
-void changeCell(listcell *l,const vector *oldpos,const vector *newpos,int num)
+void changeCell(listcell *l,const jvector *oldpos,const jvector *newpos,int num)
 {
 	int ncell_old,ncell_new;                       // cell number
 	int posx,posy,posz;              // cell coordinates
@@ -2666,7 +2666,7 @@ void changeCell(listcell *l,const vector *oldpos,const vector *newpos,int num)
 
 }
 
-void addToList(listcell *l,const vector *pos,int num)
+void addToList(listcell *l,const jvector *pos,int num)
 {
 	int ncell;                       // cell number
 	int posx,posy,posz;              // cell coordinates

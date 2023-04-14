@@ -4,7 +4,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#include "vector.h"
+#include "jvector.h"
 #include "smart_allocator.h"
 #include "interaction_map.h"
 
@@ -27,7 +27,7 @@ interactionmap* createInteractionMap(int max_elements,int max_neighbours)
 	// lasciamo in fondo max_elements spazi vuoti
 	Matrix2DSafe(i->with,max_elements,max_neighbours,max_elements,int);
 	Matrix2DSafe(i->rij2,max_elements,max_neighbours,max_elements,double);
-	Matrix2DSafe(i->rij,max_elements,max_neighbours,max_elements,vector);
+	Matrix2DSafe(i->rij,max_elements,max_neighbours,max_elements,jvector);
 	
 	return i;
 }
@@ -68,7 +68,7 @@ void buildImeFromIm(interactionmap *im,interactionmap *ime)
 		{
 			j=im->with[i][index];
 			double rij2=im->rij2[i][index];
-			vector rij=im->rij[i][index];
+			jvector rij=im->rij[i][index];
 			
 			ime->rij[i][ime->howmany[i]]=rij;
 			(ime->rij[j][ime->howmany[j]]).x=-rij.x;

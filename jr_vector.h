@@ -5,21 +5,21 @@ typedef struct _vector {
 	double x;
 	double y;
 	double z;
-} vector;
+} jvector;
 
-vector vectorAdd(const vector *v1,const vector *v2);
-vector vectorSub(const vector *v1,const vector *v2);
-vector* vectorScale (double scalar,vector *v);
-double vectorScalarProduct (const vector *v1,const vector *v2);
-double vectorNorm (const vector *v);
-double vectorSquareNorm (const vector *v);
-vector* vectorVersor (vector *v);
-vector* vectorOpposite(vector *v);
-vector vectorVectorProduct (const vector *v1,const vector *v2);
-void gramSchmidt(vector *v1,vector *v2,vector *v3);
+jvector vectorAdd(const jvector *v1,const jvector *v2);
+jvector vectorSub(const jvector *v1,const jvector *v2);
+jvector* vectorScale (double scalar,jvector *v);
+double vectorScalarProduct (const jvector *v1,const jvector *v2);
+double vectorNorm (const jvector *v);
+double vectorSquareNorm (const jvector *v);
+jvector* vectorVersor (jvector *v);
+jvector* vectorOpposite(jvector *v);
+jvector vectorVectorProduct (const jvector *v1,const jvector *v2);
+void gramSchmidt(jvector *v1,jvector *v2,jvector *v3);
 double determinant(double (*m)[3]);
-vector matrix_vector_multiplication(double (*m)[3],vector *v);
-void randomVector(vector *rv,gsl_rng *random);
-vector rotateVector(vector *v,vector *axis,double teta);
+jvector matrix_vector_multiplication(double (*m)[3],jvector *v);
+void randomVector(jvector *rv,gsl_rng *random);
+jvector rotateVector(jvector *v,jvector *axis,double teta);
 #endif
 

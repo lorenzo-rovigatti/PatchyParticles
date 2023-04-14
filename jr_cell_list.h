@@ -13,22 +13,22 @@ typedef struct _listcell {
 } listcell;
 
 
-void celllistConstructor(FILE *config_file,vector *pos,int *ncolloids,vector *box,double *cutoff,
+void celllistConstructor(FILE *config_file,jvector *pos,int *ncolloids,jvector *box,double *cutoff,
 			 interactionmap *interactioList,double *cellsize,
 			 listcell **list,void (**getInteractionMap)(args *argv,int argc),args **interactionMapArguments,int *numinteractionargs);
 
-listcell* getList(vector box_sides,double cutoff,int num_particles);
+listcell* getList(jvector box_sides,double cutoff,int num_particles);
 void freeList(listcell *l);
-void updateList(listcell *l,const vector *pos,int num);
-void fullUpdateList(listcell *l,const vector *pos,int num,vector box_sides,double cutoff);
-void changeCell(listcell *l,const vector *oldpos,const vector *newpos,int num);
+void updateList(listcell *l,const jvector *pos,int num);
+void fullUpdateList(listcell *l,const jvector *pos,int num,jvector box_sides,double cutoff);
+void changeCell(listcell *l,const jvector *oldpos,const jvector *newpos,int num);
 void calculateInteractionMap(listcell *l,interactionmap *im);
-int calculateSystemInteractionMap(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff);
-int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff);
-void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,vector *pos,vector *box,double cutoff);
-void calculateExtendedInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,interactionmap *ime,vector *pos,vector *box,double cutoff);
-void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap *ime,vector *pos,vector *box,double cutoff);
-void addToList(listcell *l,const vector *pos,int num);
-void get_perpendicular_versor(vector v, vector res);
+int calculateSystemInteractionMap(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff);
+int calculateSystemInteractionMapOrdered(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff);
+void calculateInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,jvector *pos,jvector *box,double cutoff);
+void calculateExtendedInteractionMapWithCutoffDistance(listcell *l,interactionmap *im,interactionmap *ime,jvector *pos,jvector *box,double cutoff);
+void calculateInteractionMapWithCutoffDistanceOrdered(listcell *l,interactionmap *ime,jvector *pos,jvector *box,double cutoff);
+void addToList(listcell *l,const jvector *pos,int num);
+void get_perpendicular_versor(jvector v, jvector res);
 
 #endif

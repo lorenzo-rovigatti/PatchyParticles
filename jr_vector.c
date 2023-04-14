@@ -4,13 +4,13 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#include "vector.h"
+#include "jvector.h"
 
 #define SQR(x) ((x)*(x))
 
-vector vectorAdd(const vector *v1,const vector *v2)
+jvector vectorAdd(const jvector *v1,const jvector *v2)
 {
-	vector sum;
+	jvector sum;
 	
 	sum.x=v1->x+v2->x;
 	sum.y=v1->y+v2->y;
@@ -19,9 +19,9 @@ vector vectorAdd(const vector *v1,const vector *v2)
 	return sum;
 }
 
-vector vectorSub(const vector *v1,const vector *v2)
+jvector vectorSub(const jvector *v1,const jvector *v2)
 {
-	vector sub;
+	jvector sub;
 	
 	sub.x=v1->x-v2->x;
 	sub.y=v1->y-v2->y;
@@ -30,7 +30,7 @@ vector vectorSub(const vector *v1,const vector *v2)
 	return sub;
 }
 
-vector* vectorScale (double scalar,vector *v)
+jvector* vectorScale (double scalar,jvector *v)
 {
 	v->x=scalar*v->x;
 	v->y=scalar*v->y;
@@ -39,22 +39,22 @@ vector* vectorScale (double scalar,vector *v)
 	return v;
 }
 
-double vectorScalarProduct (const vector *v1,const vector *v2)
+double vectorScalarProduct (const jvector *v1,const jvector *v2)
 {
 	return v1->x*v2->x+v1->y*v2->y+v1->z*v2->z;
 }
 
-double vectorNorm (const vector *v)
+double vectorNorm (const jvector *v)
 {
 	return sqrt(SQR(v->x)+SQR(v->y)+SQR(v->z));
 }
 
-double vectorSquareNorm (const vector *v)
+double vectorSquareNorm (const jvector *v)
 {	
 	return SQR(v->x)+SQR(v->y)+SQR(v->z);
 }
 
-vector* vectorVersor (vector *v)
+jvector* vectorVersor (jvector *v)
 {
 	
 	double i_n=1./vectorNorm(v);
@@ -66,7 +66,7 @@ vector* vectorVersor (vector *v)
 	return v;
 }
 
-vector* vectorOpposite(vector *v)
+jvector* vectorOpposite(jvector *v)
 {
 	v->x=-v->x;
 	v->y=-v->y;
@@ -74,9 +74,9 @@ vector* vectorOpposite(vector *v)
 	return v;
 }
 
-vector vectorVectorProduct (const vector *v1,const vector *v2)
+jvector vectorVectorProduct (const jvector *v1,const jvector *v2)
 {
-	vector result;
+	jvector result;
 	
 	result.x=(v1->y*v2->z)-(v1->z*v2->y);
 	result.y=(v1->z*v2->x)-(v1->x*v2->z);
@@ -86,7 +86,7 @@ vector vectorVectorProduct (const vector *v1,const vector *v2)
 	
 }
 
-void gramSchmidt(vector *v1,vector *v2,vector *v3)
+void gramSchmidt(jvector *v1,jvector *v2,jvector *v3)
 {
 	double v1_norm2=SQR(v1->x)+SQR(v1->y)+SQR(v1->z);
 	double v2_v1=v2->x*v1->x+v2->y*v1->y+v2->z*v1->z;
@@ -125,9 +125,9 @@ double determinant(double (*m)[3])
 	return det;
 }
 
-vector matrix_vector_multiplication(double (*m)[3],vector *v)
+jvector matrix_vector_multiplication(double (*m)[3],jvector *v)
 {
-	vector result;
+	jvector result;
 	
 	result.x=m[0][0]*v->x+m[0][1]*v->y+m[0][2]*v->z;
 	result.y=m[1][0]*v->x+m[1][1]*v->y+m[1][2]*v->z;
@@ -137,7 +137,7 @@ vector matrix_vector_multiplication(double (*m)[3],vector *v)
 }
 
 // Frenkel-Smit algorithm
-void randomVector(vector *rv,gsl_rng *random)
+void randomVector(jvector *rv,gsl_rng *random)
 {
 	double ransq=2.;
 	double ran1,ran2;
@@ -158,13 +158,13 @@ void randomVector(vector *rv,gsl_rng *random)
 	
 }
 
-vector rotateVector(vector *v,vector *axis,double teta)
+jvector rotateVector(jvector *v,jvector *axis,double teta)
 {
 	double uct=1.-cos(teta);
 	double st=sin(teta);
 	double ct=cos(teta);
 	
-	vector vettorei=*axis;
+	jvector vettorei=*axis;
 	vectorVersor(&vettorei);
 	
 	double rotation_matrix[3][3];
