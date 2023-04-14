@@ -8,7 +8,7 @@
 
 
 
-
+#include "jr_vector.h"
 #include "jr_interaction_map.h"
 #include "jr_cell_list.h"
 #include "jr_smart_allocator.h"
@@ -25,7 +25,8 @@
 #include <assert.h>
 
 
-
+static jvector *Pos;
+static jvector Box;
 
 
 static double Range;
@@ -1313,8 +1314,11 @@ double get_OpL_global(char op_code,int l,int ncolloids,orderparam *op)
 
 
 /* PUBLIC INTERFACE */
-void crystalsConstructor(input_file *input,int ncolloids,vector box,Output *output_files)
+void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 {
+    
+    
+
     Method=0;
 
     int found_method=getInputInt("Order_parameter_method",&Method,0);
@@ -1324,6 +1328,21 @@ void crystalsConstructor(input_file *input,int ncolloids,vector box,Output *outp
         output_log_msg(,output_files,"Order Parameter calculation disabled\n");
         return;
     }
+
+
+    // conversion section
+    int ncolloids=syst->N;
+
+    jvector box;
+    box.x=syst->box[0];
+    box.y=syst->box[1];
+    box.z=syst->box[2];
+
+    Pos=calloc(ncolloids,sizeof(jvector));
+
+    // end conversion section
+
+
 
 	getInputDouble("Order_parameter_neighbours_range",&Range,1);
 	getInputInt("Order_parameter_max_neighbours",&MaxNeighbours,1);
@@ -1402,8 +1421,11 @@ void crystalsConstructor(input_file *input,int ncolloids,vector box,Output *outp
 
 void freeCrystals()
 {
+
 	if (Method==0)
 		return;
+
+    free(Pos);
 
 	freeOP(OP,3);
 
@@ -1425,7 +1447,18 @@ void freeCrystals()
 double getOrderParameter(System *syst,int *num_solid)
 {
     // vector *pos,int ncolloids,vector *box
+    int ncolloids=syst->N;
 
+    jvector box;
+    box.x=syst->box[0];
+    box.y=syst->box[1];
+    box.z=syst->box[2];
+
+    int i;
+    for (i=0;i<ncolloids,i++)
+    {
+        Pos[i].x=syst->particles
+    }
 
 	int particle1,particle2,j;
 
