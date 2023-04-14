@@ -425,6 +425,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->r_cut = 1. + syst->kf_delta;
 	cells_init(syst, output_files, syst->r_cut);
 	cells_fill(syst);
+	
 }
 
 void system_free(System *syst) {

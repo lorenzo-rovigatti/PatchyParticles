@@ -47,4 +47,7 @@ void utils_reset_acceptance_counters(System *syst);
 
 int getLine(char *line,FILE *pfile);
 
+void get_perpendicular_versor(vector v, vector res);
+
+
 #endif /* UTILS_H_ */
