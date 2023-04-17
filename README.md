@@ -109,10 +109,8 @@ The code is commented lightly. However, we have tried to highlight what is done 
 * The `output.c, output.h` pair contains the functions used to initialise and cleanup the data structure responsible for printing the output (`Output`), as well as the functions that actually print most of the output.
 * The `parse_input.c, parse_input.h` pair contains the data structures, logic and functions used by the code to parse the input file passed to `PatchyParticles`  
 
-## Known Issues
-
-The VMMC algorithm may fail if the cluster that is built during a move is so big that a particle that is in the cluster can interact with other particles in the cluster through multiple copies of itself *via* periodic-boundary conditions. If you are experiencing this issue, set `vmmc_max_move` and `vmmc_max_cluster` to smaller and smaller values till the problem does not go away.
-
 ## Acknowledgements
 
 The code has been developed by Lorenzo Rovigatti (Dipartimento di Fisica, Sapienza University of Rome), John Russo (School of Mathematics, University of Bristol) and Flavio Romano (Dipartimento di Scienze Molecolari e Nanosistemi, Università Ca' Foscari di Venezia). Feel free to contact us if you have any questions/comments, and if you use the code in your project please consider adding a reference to the [`PatchyParticles` paper](https://doi.org/10.1140/epje/i2018-11667-x).
+
+We thank Daniele Notarmuzi, Martin Oettel and Alessandro Simon for discussions, suggestions and bugfixing related to the code.

@@ -11,15 +11,19 @@ typedef struct input_file input_file;
 typedef struct vmmc_d {
 	double max_move;
 	int max_cluster;
-	PatchyParticle ** possible_links;
+	PatchyParticle **possible_links;
 	int n_possible_links;
-	PatchyParticle ** prelinked_particles;
+	PatchyParticle **prelinked_particles;
 	int n_prelinked_particles;
-	PatchyParticle ** clust;
+	PatchyParticle **clust;
 	int n_clust;
 	int * is_in_cluster;
 	int which_move;
 	matrix rotation;
+	int *copies;
+	int *possible_links_counter;
+	PatchyParticle **outright_failed;
+	int n_outright_failed;
 } vmmc_d;
 
 void VMMC_init(input_file *input, System *syst, Output *IO);
