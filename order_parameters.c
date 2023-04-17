@@ -1,4 +1,3 @@
-#include "order_parameters.h"
 #include "MC.h"
 #include "output.h"
 #include "parse_input.h"
@@ -16,6 +15,7 @@
 #include "jr_bilista.h"
 #include "jr_ordinator.h"
 
+#include "order_parameters.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,9 +61,9 @@ static double *Csd_buffer;
 static int Csd_size;
 
 // reference system
-static vector Z_versor;
-static vector X_versor;
-static vector Y_versor;
+static jvector Z_versor;
+static jvector X_versor;
+static jvector Y_versor;
 
 
 
@@ -73,6 +73,56 @@ static int *ImSolid;
 
 static sph_ws Legendre_workspace;
 static double *Legendre_associated_polynomials;
+
+
+
+// Frenkel-Smit algorithm
+
+static void randomVersor(jvector *rv)
+{
+	double ransq=2.;
+	double ran1,ran2;
+	double ranh;
+
+	while (ransq>=1.)
+	{
+		ran1=1.-2.*drand48();
+		ran2=1.-2.*drand48();
+		ransq=SQR(ran1)+SQR(ran2);
+	}
+
+	ranh=2.*sqrt(1.-ransq);
+
+	rv->x=ran1*ranh;
+	rv->y=ran2*ranh;
+	rv->z=1.-2.*ransq;
+
+}
+
+static jvector getPerpendicularVersor(jvector *v1)
+{
+	jvector v2;
+
+	randomVersor(&v2);
+
+	double v1_norm2=SQR(v1->x)+SQR(v1->y)+SQR(v1->z);
+	double v2_v1=v2.x*v1->x+v2.y*v1->y+v2.z*v1->z;
+	double buffer=v2_v1/v1_norm2;
+
+	// u2=v2-((v2*u1)/(u1.norma**2))*u1
+	v2.x=v2.x-(buffer)*v1->x;
+	v2.y=v2.y-(buffer)*v1->y;
+	v2.z=v2.z-(buffer)*v1->z;
+
+	double inorma=1./sqrt(SQR(v2.x)+SQR(v2.y)+SQR(v2.z));
+
+	v2.x*=inorma;
+	v2.y*=inorma;
+	v2.z*=inorma;
+
+	return v2;
+}
+
 
 // FUNZIONI PER IL CALCOLO VELOCE DELLE ARMONICHE SFERICHE
 
@@ -407,7 +457,7 @@ int request_Wl(int l,int ncolloids,orderparam *op)
 }
 
 
-void calculate_qlm_maxneighbours(orderparam *op,vector *pos,vector *Box,double range,int maxneighbours,listcell *cells,vector x_versor,vector y_versor,vector z_versor)
+void calculate_qlm_maxneighbours(orderparam *op,jvector *pos,jvector *Box,double range,int maxneighbours,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor)
 {
 	interactionmap *ime=op->ime;
 
@@ -422,7 +472,7 @@ void calculate_qlm_maxneighbours(orderparam *op,vector *pos,vector *Box,double r
 			ime->howmany[index]=maxneighbours;
 	}
 
-	vector v_12,xy_projection,z_projection;
+	jvector v_12,xy_projection,z_projection;
 
 
 	// scegliamo una terna di riferimento casuale in modo da poter partire anche dal cristallo
@@ -456,10 +506,10 @@ void calculate_qlm_maxneighbours(orderparam *op,vector *pos,vector *Box,double r
 			v_12.y*=inorm;
 			v_12.z*=inorm;
 
-			costeta=SCALAR(&v_12,&z_versor);
+			costeta=JSCALAR(&v_12,&z_versor);
 
 
-			double z_projection_module=SCALAR(&v_12,&z_versor);
+			double z_projection_module=JSCALAR(&v_12,&z_versor);
 
 			z_projection.x=z_projection_module*z_versor.x;
 			z_projection.y=z_projection_module*z_versor.y;
@@ -474,8 +524,8 @@ void calculate_qlm_maxneighbours(orderparam *op,vector *pos,vector *Box,double r
 			xy_projection.y*=inorm;
 			xy_projection.z*=inorm;
 
-			cosphi=SCALAR(&xy_projection,&x_versor);
-			sinphi=SCALAR(&xy_projection,&y_versor);
+			cosphi=JSCALAR(&xy_projection,&x_versor);
+			sinphi=JSCALAR(&xy_projection,&y_versor);
 
 			if (sinphi>0)
 				phi=acos(cosphi);
@@ -517,7 +567,7 @@ void calculate_qlm_maxneighbours(orderparam *op,vector *pos,vector *Box,double r
 }
 
 
-void calculate_qlm_maxneighbours_fast(orderparam *op,vector *pos,vector *Box,double range,int maxneighbours,listcell *cells,vector x_versor,vector y_versor,vector z_versor,sph_ws *Legendre_workspace,double *Legendre_associated_polynomials)
+void calculate_qlm_maxneighbours_fast(orderparam *op,jvector *pos,jvector *Box,double range,int maxneighbours,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,sph_ws *Legendre_workspace,double *Legendre_associated_polynomials)
 {
 	interactionmap *ime=op->ime;
 
@@ -532,7 +582,7 @@ void calculate_qlm_maxneighbours_fast(orderparam *op,vector *pos,vector *Box,dou
 			ime->howmany[index]=maxneighbours;
 	}
 
-	vector v_12,xy_projection,z_projection;
+	jvector v_12,xy_projection,z_projection;
 
 
 	// scegliamo una terna di riferimento casuale in modo da poter partire anche dal cristallo
@@ -565,10 +615,10 @@ void calculate_qlm_maxneighbours_fast(orderparam *op,vector *pos,vector *Box,dou
 			v_12.y*=inorm;
 			v_12.z*=inorm;
 
-			costeta=SCALAR(&v_12,&z_versor);
+			costeta=JSCALAR(&v_12,&z_versor);
 
 
-			double z_projection_module=SCALAR(&v_12,&z_versor);
+			double z_projection_module=JSCALAR(&v_12,&z_versor);
 
 			z_projection.x=z_projection_module*z_versor.x;
 			z_projection.y=z_projection_module*z_versor.y;
@@ -583,8 +633,8 @@ void calculate_qlm_maxneighbours_fast(orderparam *op,vector *pos,vector *Box,dou
 			xy_projection.y*=inorm;
 			xy_projection.z*=inorm;
 
-			cosphi=SCALAR(&xy_projection,&x_versor);
-			sinphi=SCALAR(&xy_projection,&y_versor);
+			cosphi=JSCALAR(&xy_projection,&x_versor);
+			sinphi=JSCALAR(&xy_projection,&y_versor);
 
 			if (sinphi>0)
 				phi=acos(cosphi);
@@ -706,13 +756,13 @@ void calculate_QlmFlavio(orderparam *op,int ncolloids)
 	}
 }
 
-void calculate_qlm_different_im(orderparam *op,vector *pos,vector *Box,double range,listcell *cells,vector x_versor,vector y_versor,vector z_versor,interactionmap *ime)
+void calculate_qlm_different_im(orderparam *op,jvector *pos,jvector *Box,double range,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,interactionmap *ime)
 {
 // 	calculateExtendedInteractionMapWithCutoffDistance(cells,op->im,op->ime,pos,box,range);
 // 	interactionmap *im=op->im;
 // 	interactionmap *ime=op->ime;
 
-	vector v_12,xy_projection,z_projection;
+	jvector v_12,xy_projection,z_projection;
 	//vector old_v_12;
 
 
@@ -746,10 +796,10 @@ void calculate_qlm_different_im(orderparam *op,vector *pos,vector *Box,double ra
 			v_12.y*=inorm;
 			v_12.z*=inorm;
 
-			costeta=SCALAR(&v_12,&z_versor);
+			costeta=JSCALAR(&v_12,&z_versor);
 
 
-			double z_projection_module=SCALAR(&v_12,&z_versor);
+			double z_projection_module=JSCALAR(&v_12,&z_versor);
 
 			z_projection.x=z_projection_module*z_versor.x;
 			z_projection.y=z_projection_module*z_versor.y;
@@ -764,8 +814,8 @@ void calculate_qlm_different_im(orderparam *op,vector *pos,vector *Box,double ra
 			xy_projection.y*=inorm;
 			xy_projection.z*=inorm;
 
-			cosphi=SCALAR(&xy_projection,&x_versor);
-			sinphi=SCALAR(&xy_projection,&y_versor);
+			cosphi=JSCALAR(&xy_projection,&x_versor);
+			sinphi=JSCALAR(&xy_projection,&y_versor);
 
 			if (sinphi>0)
 				phi=acos(cosphi);
@@ -1321,11 +1371,11 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 
     Method=0;
 
-    int found_method=getInputInt("Order_parameter_method",&Method,0);
+    int found_method=getInputInt(input,"Order_parameter_method",&Method,0);
 
     if ((found_method==KEY_NOT_FOUND) || (Method==0))
     {
-        output_log_msg(,output_files,"Order Parameter calculation disabled\n");
+        output_log_msg(output_files,"Order Parameter calculation disabled\n");
         return;
     }
 
@@ -1344,18 +1394,18 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 
 
 
-	getInputDouble("Order_parameter_neighbours_range",&Range,1);
-	getInputInt("Order_parameter_max_neighbours",&MaxNeighbours,1);
+	getInputDouble(input,"Order_parameter_neighbours_range",&Range,1);
+	getInputInt(input,"Order_parameter_max_neighbours",&MaxNeighbours,1);
 	
-	getInputInt("Order_parameter_l",&OP_l,1);
-	getInputString("Order_parameter_code",&OP_code,1);
+	getInputInt(input,"Order_parameter_l",&OP_l,1);
+	getInputString(input,"Order_parameter_code",&OP_code,1);
 
 
-	int found_threshold=getInputDouble("Order_parameter_coherence_threshold",&Coherence_threshold,0);
-	int found_solid_threshold=getInputInt("Order_parameter_solid_threshold",&Solid_threshold,0);
-	int found_staggered_threshold=getInputDouble("Order_parameter_staggered_threshold",&Staggered_threshold,0);
-	int found_eclipsed_lowthreshold=getInputDouble("Order_parameter_eclipsed_lowthreshold",&Eclipsed_lowthreshold,0);
-	int found_eclipsed_highthreshold=getInputDouble("Order_parameter_eclipsed_highthreshold",&Eclipsed_highthreshold,0);
+	int found_threshold=getInputDouble(input,"Order_parameter_coherence_threshold",&Coherence_threshold,0);
+	int found_solid_threshold=getInputInt(input,"Order_parameter_solid_threshold",&Solid_threshold,0);
+	int found_staggered_threshold=getInputDouble(input,"Order_parameter_staggered_threshold",&Staggered_threshold,0);
+	int found_eclipsed_lowthreshold=getInputDouble(input,"Order_parameter_eclipsed_lowthreshold",&Eclipsed_lowthreshold,0);
+	int found_eclipsed_highthreshold=getInputDouble(input,"Order_parameter_eclipsed_highthreshold",&Eclipsed_highthreshold,0);
 	
 
 	CrystalFractionCell=getList(box,Range,ncolloids);
@@ -1380,9 +1430,9 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 
 
 	// costruiamo il sistema di riferimento
-    random_vector_on_sphere(X_versor);
-    get_perpendicular_versor(X_versor,Y_versor);
-	cross(X_versor,Y_versor,Z_versor);
+	randomVersor(&X_versor);
+	Y_versor=getPerpendicularVersor(&X_versor);
+	Z_versor=vectorVectorProduct(&X_versor,&Y_versor);
 
 	Buffer=calloc(ncolloids,sizeof(double));
 
@@ -1401,21 +1451,18 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 
     if ((found_threshold==KEY_NOT_FOUND) || (found_solid_threshold==KEY_NOT_FOUND))
     {
-        output_log_msg(,output_files,"Error: define 'Order_parameter_coherence_threshold' and 'Order_parameter_solid_threshold'\n");
+        output_log_msg(output_files,"Error: define 'Order_parameter_coherence_threshold' and 'Order_parameter_solid_threshold'\n");
         exit(1);
     }
     else
     {
-        output_log_msg("Metodo: Frenkel\n");
-        output_log_msg("Coherence threshold %lf\n",Coherence_threshold);
-        output_log_msg("Number links per solid particle %d\n\n",Solid_threshold);
+        output_log_msg(output_files,"Metodo: Frenkel\n");
+        output_log_msg(output_files,"Coherence threshold %lf\n",Coherence_threshold);
+        output_log_msg(output_files,"Number links per solid particle %d\n\n",Solid_threshold);
     }
 
     Coherent_map=createInteractionMap(ncolloids,MaxNeighbours);
     Num_coherent=calloc(ncolloids,sizeof(int));
-
-
-	searchFree(s);
 }
 
 
@@ -1446,6 +1493,12 @@ void freeCrystals()
 
 double getOrderParameter(System *syst,int *num_solid)
 {
+	if (Method==0)
+	{
+		*num_solid=0.;
+		return -1;
+	}
+
     // vector *pos,int ncolloids,vector *box
     int ncolloids=syst->N;
 
@@ -1455,26 +1508,26 @@ double getOrderParameter(System *syst,int *num_solid)
     box.z=syst->box[2];
 
     int i;
-    for (i=0;i<ncolloids,i++)
+    for (i=0;i<ncolloids;i++)
     {
-        Pos[i].x=syst->particles
+        Pos[i].x=syst->particles[i].r[0];
+		Pos[i].y=syst->particles[i].r[1];
+		Pos[i].z=syst->particles[i].r[2];
     }
+
+	jvector *pos=Pos;
 
 	int particle1,particle2,j;
 
 
-	if (Method==-1)
-	{
-		*num_solid=0.;
-		return -1;
-	}
+	
 
 	resetOP(OP,ncolloids,2);
 
 
-	fullUpdateList(CrystalFractionCell,pos,ncolloids,*box,Range);
+	fullUpdateList(CrystalFractionCell,pos,ncolloids,box,Range);
 
-	calculate_qlm_maxneighbours_fast(OP,pos,box,Range,MaxNeighbours,CrystalFractionCell,X_versor,Y_versor,Z_versor,&Legendre_workspace,Legendre_associated_polynomials);
+	calculate_qlm_maxneighbours_fast(OP,pos,&box,Range,MaxNeighbours,CrystalFractionCell,X_versor,Y_versor,Z_versor,&Legendre_workspace,Legendre_associated_polynomials);
 	
     calculate_Qlm(OP,ncolloids);
 
@@ -1504,18 +1557,16 @@ double getOrderParameter(System *syst,int *num_solid)
 
 	*num_solid=0;
 	int max_size=0;
+
 	for (particle1=0;particle1<ncolloids;particle1++)
 	{
-
 		if (ImSolid[particle1]==1)
 		{
 			bilistaInsert(List_solid,particle1);
 			(*num_solid)++;
 
 			addNode(particle1,Cluster_solid);
-
-			if (Method==0)
-			{
+			
 				// USUAL
 				interactionmap *ime=OP->ime;
 				for (j=0;j<ime->howmany[particle1];j++)
@@ -1539,63 +1590,6 @@ double getOrderParameter(System *syst,int *num_solid)
 
 					}
 				}
-			}
-			else if ((Method==1) || (Method==2))
-			{
-				for (j=0;j<Staggered_map->howmany[particle1];j++)
-				{
-					particle2=Staggered_map->with[particle1][j];
-
-					if (ImSolid[particle2]==1)
-					{
-
-						addNode(particle2,Cluster_solid);
-
-						int size=addBond(particle1,particle2,Cluster_solid);
-
-						if (size>max_size)
-							max_size=size;
-
-					}
-				}
-				for (j=0;j<Eclipsed_map->howmany[particle1];j++)
-				{
-					particle2=Eclipsed_map->with[particle1][j];
-
-					if (ImSolid[particle2]==1)
-					{
-
-						addNode(particle2,Cluster_solid);
-
-						int size=addBond(particle1,particle2,Cluster_solid);
-
-						if (size>max_size)
-							max_size=size;
-
-					}
-				}
-			}
-			else if (Method==3)
-			{
-				interactionmap *ime=OP->ime;
-
-				for (j=0;j<ime->howmany[particle1];j++)
-				{
-					particle2=ime->with[particle1][j];
-
-					if (ImSolid[particle2]==1)
-					{
-
-						addNode(particle2,Cluster_solid);
-
-						int size=addBond(particle1,particle2,Cluster_solid);
-
-						if (size>max_size)
-							max_size=size;
-
-					}
-				}
-			}
 		}
 	}
 
