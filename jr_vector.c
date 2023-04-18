@@ -1,10 +1,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <math.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 
-#include "jvector.h"
+#include "jr_vector.h"
 
 #define SQR(x) ((x)*(x))
 
@@ -111,7 +109,7 @@ void gramSchmidt(jvector *v1,jvector *v2,jvector *v3)
 	
 }
 
-double determinant(double (*m)[3])
+double jr_determinant(double (*m)[3])
 {
 	double det=0.;
 	
@@ -136,27 +134,6 @@ jvector matrix_vector_multiplication(double (*m)[3],jvector *v)
 	return result;
 }
 
-// Frenkel-Smit algorithm
-void randomVector(jvector *rv,gsl_rng *random)
-{
-	double ransq=2.;
-	double ran1,ran2;
-	double ranh;
-	
-	while (ransq>=1.)
-	{
-		ran1=1.-2.*gsl_rng_uniform(random);
-		ran2=1.-2.*gsl_rng_uniform(random);
-		ransq=SQR(ran1)+SQR(ran2);
-	}
-	
-	ranh=2.*sqrt(1.-ransq);
-	
-	rv->x=ran1*ranh;
-	rv->y=ran2*ranh;
-	rv->z=1.-2.*ransq;
-	
-}
 
 jvector rotateVector(jvector *v,jvector *axis,double teta)
 {

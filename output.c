@@ -11,6 +11,7 @@
 #include "MC.h"
 #include "parse_input.h"
 #include "utils.h"
+#include "order_parameters.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -109,6 +110,21 @@ void output_init(input_file *input, Output *output_files) {
 		output_files->boxshape = fopen("boxshape.dat", mode);
 		if(output_files->boxshape == NULL) output_exit(output_files, "boxshape.dat is not writable\n");
 	}
+
+
+	// order parameters
+	int output_op=getInputString(input,"Order_parameter_file",name,0);
+
+	if (output_op==KEY_FOUND)
+	{
+		output_files->op = fopen(name, mode);
+	}
+	else
+		output_files->op=NULL;
+
+
+
+
 }
 
 void output_free(Output *output_files) {
@@ -222,6 +238,17 @@ void output_print(Output *output_files, System *syst, llint step) {
 		sprintf(name, "%s/bonds_%lld.dat", output_files->bonds_folder, step);
 		output_print_bonds(output_files, syst, name);
 	}
+
+
+	// order parameter section
+	if (output_files->op)
+	{
+		int num_solid;
+		int size=(int)getOrderParameter(syst,&num_solid);
+		fprintf(output_files->op,"%lld %d\n", step,size);
+		fflush(output_files->op);
+	}
+
 }
 
 void output_print_bonds(Output *output_files, System *syst, char *name) {

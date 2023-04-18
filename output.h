@@ -32,6 +32,7 @@ typedef struct Output {
 	FILE *density;
 	FILE *acc;
 	FILE *boxshape;
+	FILE *op;
 } Output;
 
 void output_init(input_file *input, Output *output_files);

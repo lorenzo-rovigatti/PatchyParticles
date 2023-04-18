@@ -1,12 +1,10 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <math.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 
-#include "jvector.h"
-#include "smart_allocator.h"
-#include "interaction_map.h"
+#include "jr_vector.h"
+#include "jr_smart_allocator.h"
+#include "jr_interaction_map.h"
 
 
 

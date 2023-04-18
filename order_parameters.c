@@ -26,25 +26,21 @@
 
 
 static jvector *Pos;
-static jvector Box;
 
 
 static double Range;
 static int MaxNeighbours;
 static int Method;
 
-// for Method 0
 static double Coherence_threshold;
 static int Solid_threshold;
-// for Method 3
-static double Staggered_threshold;
-static double Eclipsed_lowthreshold;
-static double Eclipsed_highthreshold;
+
 
 static int OP_l;
 static char OP_code;
 static orderparam *OP;
 static complex double ***Punt_qlm;
+
 
 
 static interactionmap *Coherent_map;
@@ -54,11 +50,11 @@ static double *Buffer;
 
 
 static bilista *List_solid;
-static int Num_solid=0;
+//static int Num_solid=0;
 static clusters *Cluster_solid;
 
-static double *Csd_buffer;
-static int Csd_size;
+//static double *Csd_buffer;
+//static int Csd_size;
 
 // reference system
 static jvector Z_versor;
@@ -457,11 +453,13 @@ int request_Wl(int l,int ncolloids,orderparam *op)
 }
 
 
-void calculate_qlm_maxneighbours(orderparam *op,jvector *pos,jvector *Box,double range,int maxneighbours,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor)
+
+
+void calculate_qlm_maxneighbours_fast(orderparam *op,jvector *pos,jvector *box,double range,int maxneighbours,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,sph_ws *legendre_workspace,double *legendre_associated_polynomials)
 {
 	interactionmap *ime=op->ime;
 
-	calculateInteractionMapWithCutoffDistanceOrdered(cells,ime,pos,Box,range);
+	calculateInteractionMapWithCutoffDistanceOrdered(cells,ime,pos,box,range);
 
 	// settiamo il massimo numero di neighbours
 	int index;
@@ -495,119 +493,9 @@ void calculate_qlm_maxneighbours(orderparam *op,jvector *pos,jvector *Box,double
 			v_12.y=pos[particle1].y-pos[particle2].y;
 			v_12.z=pos[particle1].z-pos[particle2].z;
 
-			v_12.x-=Box->x*rint(v_12.x/Box->x);
-			v_12.y-=Box->y*rint(v_12.y/Box->y);
-			v_12.z-=Box->z*rint(v_12.z/Box->z);
-
-
-			inorm=1./sqrt(SQR(v_12.x)+SQR(v_12.y)+SQR(v_12.z));
-
-			v_12.x*=inorm;
-			v_12.y*=inorm;
-			v_12.z*=inorm;
-
-			costeta=JSCALAR(&v_12,&z_versor);
-
-
-			double z_projection_module=JSCALAR(&v_12,&z_versor);
-
-			z_projection.x=z_projection_module*z_versor.x;
-			z_projection.y=z_projection_module*z_versor.y;
-			z_projection.z=z_projection_module*z_versor.z;
-
-			xy_projection.x=v_12.x-z_projection.x;
-			xy_projection.y=v_12.y-z_projection.y;
-			xy_projection.z=v_12.z-z_projection.z;
-
-			inorm=1./sqrt(SQR(xy_projection.x)+SQR(xy_projection.y)+SQR(xy_projection.z));
-			xy_projection.x*=inorm;
-			xy_projection.y*=inorm;
-			xy_projection.z*=inorm;
-
-			cosphi=JSCALAR(&xy_projection,&x_versor);
-			sinphi=JSCALAR(&xy_projection,&y_versor);
-
-			if (sinphi>0)
-				phi=acos(cosphi);
-			else
-				phi=2.*M_PI-acos(cosphi);
-
-			int il;
-			for (il=0;il<op->q_num;il++)
-			{
-				l=op->q_list[il];
-
-				int order=ordinatorGetOrder(op->o,l);
-
-				for (m=-l;m<=l;m++)
-				{
-
-					complex double spherical_harmonic;
-					if (m>=0)
-					{
-						spherical_harmonic=gsl_sf_legendre_sphPlm(l,m,costeta)*cexp(I*m*phi);
-					}
-					else
-					{
-						spherical_harmonic=pow(-1.,-m)*gsl_sf_legendre_sphPlm(l,-m,costeta)*cexp(I*m*phi);
-					}
-
-
-					op->q[order][particle1][m+l]+=spherical_harmonic/(ime->howmany[particle1]);
-
-					// ATTENZIONE MODIFICA IMPORTANTE
-					//op->q[order][particle2][m+l]+=pow(-1,l)*spherical_harmonic/(ime->howmany[particle2]);
-				}
-			}
-
-		}
-
-	}
-
-}
-
-
-void calculate_qlm_maxneighbours_fast(orderparam *op,jvector *pos,jvector *Box,double range,int maxneighbours,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,sph_ws *Legendre_workspace,double *Legendre_associated_polynomials)
-{
-	interactionmap *ime=op->ime;
-
-	calculateInteractionMapWithCutoffDistanceOrdered(cells,ime,pos,Box,range);
-
-	// settiamo il massimo numero di neighbours
-	int index;
-	for (index=0;index<ime->num;index++)
-	{
-		//printf("%d\n",ime->howmany[index]);
-		if (ime->howmany[index]>maxneighbours)
-			ime->howmany[index]=maxneighbours;
-	}
-
-	jvector v_12,xy_projection,z_projection;
-
-
-	// scegliamo una terna di riferimento casuale in modo da poter partire anche dal cristallo
-
-	//vector old_v_12;
-	double inorm;
-	double costeta,cosphi,sinphi,phi;
-	int particle1,particle2,j,l,m;
-
-	for (particle1=0;particle1<ime->num;particle1++)
-	{
-
-		for (j=0;j<ime->howmany[particle1];j++)
-		{
-			particle2=ime->with[particle1][j];
-
-			// calcoliamo il versore
-
-			v_12.x=pos[particle1].x-pos[particle2].x;
-			v_12.y=pos[particle1].y-pos[particle2].y;
-			v_12.z=pos[particle1].z-pos[particle2].z;
-
-			v_12.x-=Box->x*rint(v_12.x/Box->x);
-			v_12.y-=Box->y*rint(v_12.y/Box->y);
-			v_12.z-=Box->z*rint(v_12.z/Box->z);
+			v_12.x-=box->x*rint(v_12.x/box->x);
+			v_12.y-=box->y*rint(v_12.y/box->y);
+			v_12.z-=box->z*rint(v_12.z/box->z);
 
 			inorm=1./sqrt(SQR(v_12.x)+SQR(v_12.y)+SQR(v_12.z));
 
@@ -653,21 +541,21 @@ void calculate_qlm_maxneighbours_fast(orderparam *op,jvector *pos,jvector *Box,d
 				int order=ordinatorGetOrder(op->o,l);
 
 				// precalcolo dei polinomi di legendre
-				dPl0dm (Legendre_workspace,Legendre_associated_polynomials,costeta,l);
+				dPl0dm (legendre_workspace,legendre_associated_polynomials,costeta,l);
 
 
-				op->q[order][particle1][l]+=Legendre_associated_polynomials[0]/(ime->howmany[particle1]);
+				op->q[order][particle1][l]+=legendre_associated_polynomials[0]/(ime->howmany[particle1]);
 
 				complex double exphi_last=expphi;
 				complex double exumphi_last=expumphi;
 
 				for (m=1;m<=l;m++)
 				{
-					complex double spherical_harmonic=Legendre_associated_polynomials[m]*exphi_last;
+					complex double spherical_harmonic=legendre_associated_polynomials[m]*exphi_last;
 
 					op->q[order][particle1][m+l]+=spherical_harmonic/(ime->howmany[particle1]);
 
-					spherical_harmonic=(m%2?-1:1)*Legendre_associated_polynomials[m]*exumphi_last;
+					spherical_harmonic=(m%2?-1:1)*legendre_associated_polynomials[m]*exumphi_last;
 
 					op->q[order][particle1][-m+l]+=spherical_harmonic/(ime->howmany[particle1]);
 
@@ -756,7 +644,7 @@ void calculate_QlmFlavio(orderparam *op,int ncolloids)
 	}
 }
 
-void calculate_qlm_different_im(orderparam *op,jvector *pos,jvector *Box,double range,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,interactionmap *ime)
+void calculate_qlm_different_im(orderparam *op,jvector *pos,jvector *box,double range,listcell *cells,jvector x_versor,jvector y_versor,jvector z_versor,interactionmap *ime)
 {
 // 	calculateExtendedInteractionMapWithCutoffDistance(cells,op->im,op->ime,pos,box,range);
 // 	interactionmap *im=op->im;
@@ -786,9 +674,9 @@ void calculate_qlm_different_im(orderparam *op,jvector *pos,jvector *Box,double 
 			v_12.y=pos[particle1].y-pos[particle2].y;
 			v_12.z=pos[particle1].z-pos[particle2].z;
 
-			v_12.x-=Box->x*rint(v_12.x/Box->x);
-			v_12.y-=Box->y*rint(v_12.y/Box->y);
-			v_12.z-=Box->z*rint(v_12.z/Box->z);
+			v_12.x-=box->x*rint(v_12.x/box->x);
+			v_12.y-=box->y*rint(v_12.y/box->y);
+			v_12.z-=box->z*rint(v_12.z/box->z);
 
 			inorm=1./sqrt(SQR(v_12.x)+SQR(v_12.y)+SQR(v_12.z));
 
@@ -956,159 +844,12 @@ complex double** get_Qlm(orderparam *op,int l)
 	return op->Q[order];
 }
 
-double *get_wl(orderparam *op,int l,int ncolloids)
-{
-	double *norm=calloc(ncolloids,sizeof(double));
 
 
-	int order=ordinatorGetOrder(op->o,l);
-
-	int m1,m2,m3; // c'e' il vincolo m1+m2+m3=0
-
-	for (m1=-l;m1<=l;m1++)
-	{
-		for (m2=-l;m2<=l;m2++)
-		{
-			m3=-m1-m2;
-
-			if (abs(m3)<=l)
-			{
-				double wigner=gsl_sf_coupling_3j(2*l,2*l,2*l,2*m1,2*m2,2*m3);
-				int i;
-				for (i=0;i<ncolloids;i++)
-				{
-					double product=creal(op->q[order][i][m1+l]*op->q[order][i][m2+l]*op->q[order][i][m3+l]);
-
-					op->wl[order][i]+=wigner*product;
-				}
-			}
-		}
-	}
-
-	// normalizziamo
-	int particle1,m;
-	for (particle1=0;particle1<ncolloids;particle1++)
-	{
-		for (m=-l;m<=l;m++)
-		{
-			norm[particle1]+=SQR(creal(op->q[order][particle1][m+l]))+SQR(cimag(op->q[order][particle1][m+l]));
-		}
-
-		op->wl[order][particle1]/=pow(norm[particle1],3./2.);
-
-		norm[particle1]=0.;
-	}
-
-	free(norm);
-
-	return op->wl[order];
-}
-
-double *get_wl_notnormalized(orderparam *op,int l,int ncolloids)
-{
-	int order=ordinatorGetOrder(op->o,l);
-
-	int m1,m2,m3; // c'e' il vincolo m1+m2+m3=0
-
-	for (m1=-l;m1<=l;m1++)
-	{
-		for (m2=-l;m2<=l;m2++)
-		{
-			m3=-m1-m2;
-
-			if (abs(m3)<=l)
-			{
-				double wigner=gsl_sf_coupling_3j(2*l,2*l,2*l,2*m1,2*m2,2*m3);
-				int i;
-				for (i=0;i<ncolloids;i++)
-				{
-					double product=creal(op->q[order][i][m1+l]*op->q[order][i][m2+l]*op->q[order][i][m3+l]);
-
-					op->wl[order][i]+=wigner*product;
-				}
-			}
-		}
-	}
-
-	return op->wl[order];
-}
 
 
-double *get_Wl(orderparam *op,int l,int ncolloids)
-{
-	double *norm=calloc(ncolloids,sizeof(double));
 
-	int order=ordinatorGetOrder(op->o,l);
 
-	int m1,m2,m3; // c'e' il vincolo m1+m2+m3=0
-
-	for (m1=-l;m1<=l;m1++)
-	{
-		for (m2=-l;m2<=l;m2++)
-		{
-			m3=-m1-m2;
-
-			if (abs(m3)<=l)
-			{
-				double wigner=gsl_sf_coupling_3j(2*l,2*l,2*l,2*m1,2*m2,2*m3);
-				int i;
-				for (i=0;i<ncolloids;i++)
-				{
-					double product=creal(op->Q[order][i][m1+l]*op->Q[order][i][m2+l]*op->Q[order][i][m3+l]);
-
-					op->Wl[order][i]+=wigner*product;
-				}
-			}
-		}
-	}
-
-	// normalizziamo
-	int particle1,m;
-	for (particle1=0;particle1<ncolloids;particle1++)
-	{
-		for (m=-l;m<=l;m++)
-		{
-			norm[particle1]+=SQR(creal(op->Q[order][particle1][m+l]))+SQR(cimag(op->Q[order][particle1][m+l]));
-		}
-
-		op->Wl[order][particle1]/=pow(norm[particle1],3./2.);
-
-		norm[particle1]=0.;
-	}
-
-	free(norm);
-
-	return op->Wl[order];
-}
-
-double *get_Wl_notnormalized(orderparam *op,int l,int ncolloids)
-{
-	int order=ordinatorGetOrder(op->o,l);
-
-	int m1,m2,m3; // c'e' il vincolo m1+m2+m3=0
-
-	for (m1=-l;m1<=l;m1++)
-	{
-		for (m2=-l;m2<=l;m2++)
-		{
-			m3=-m1-m2;
-
-			if (abs(m3)<=l)
-			{
-				double wigner=gsl_sf_coupling_3j(2*l,2*l,2*l,2*m1,2*m2,2*m3);
-				int i;
-				for (i=0;i<ncolloids;i++)
-				{
-					double product=creal(op->Q[order][i][m1+l]*op->Q[order][i][m2+l]*op->Q[order][i][m3+l]);
-
-					op->Wl[order][i]+=wigner*product;
-				}
-			}
-		}
-	}
-
-	return op->Wl[order];
-}
 
 double get_ql_global(orderparam *op,int l,int ncolloids)
 {
@@ -1336,10 +1077,6 @@ double* get_OpL(char op_code,int l,int ncolloids,orderparam *op)
 		return get_ql(op,l,ncolloids);
 	else if (op_code=='Q')
 		return get_Ql(op,l,ncolloids);
-	else if (op_code=='w')
-		return get_wl_notnormalized(op,l,ncolloids);
-	else if (op_code=='W')
-		return get_Wl(op,l,ncolloids);
 	else
 	{
 		printf("Error: wrong order parameter code\n");
@@ -1398,14 +1135,13 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 	getInputInt(input,"Order_parameter_max_neighbours",&MaxNeighbours,1);
 	
 	getInputInt(input,"Order_parameter_l",&OP_l,1);
-	getInputString(input,"Order_parameter_code",&OP_code,1);
+	getInputChar(input,"Order_parameter_code",&OP_code,1);
 
 
 	int found_threshold=getInputDouble(input,"Order_parameter_coherence_threshold",&Coherence_threshold,0);
 	int found_solid_threshold=getInputInt(input,"Order_parameter_solid_threshold",&Solid_threshold,0);
-	int found_staggered_threshold=getInputDouble(input,"Order_parameter_staggered_threshold",&Staggered_threshold,0);
-	int found_eclipsed_lowthreshold=getInputDouble(input,"Order_parameter_eclipsed_lowthreshold",&Eclipsed_lowthreshold,0);
-	int found_eclipsed_highthreshold=getInputDouble(input,"Order_parameter_eclipsed_highthreshold",&Eclipsed_highthreshold,0);
+
+	
 	
 
 	CrystalFractionCell=getList(box,Range,ncolloids);
@@ -1420,7 +1156,7 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 		Punt_qlm=OP->Q;
 	else
 	{
-		logPrint("Error: Order_parameter_code can be either 'q' or 'Q'\n");
+		output_log_msg(output_files,"Error: Order_parameter_code can be either 'q' or 'Q'\n");
 		exit(1);
 	}
 
@@ -1463,6 +1199,10 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 
     Coherent_map=createInteractionMap(ncolloids,MaxNeighbours);
     Num_coherent=calloc(ncolloids,sizeof(int));
+
+
+
+
 }
 
 
@@ -1598,4 +1338,6 @@ double getOrderParameter(System *syst,int *num_solid)
 
 	return (double)max_size;
 }
+
+
 

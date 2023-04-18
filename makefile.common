@@ -23,7 +23,7 @@ CFLAGS = $(ADDITIONAL_FLAGS) $(ARCH) $(DEF) $(INCLUDE_DIRS) -Wall -Wshadow
 LFLAGS = $(LIBRARY_DIRS) $(STATIC_FLAG)
 
 # ---------  OBJECTS -----------#
-OBJ = parse_input.o output.o system.o MC.o utils.o avb.o vmmc.o cells.o
+OBJ = parse_input.o output.o system.o MC.o utils.o avb.o vmmc.o cells.o jr_vector.o jr_ordinator.o jr_bilista.o jr_interaction_map.o jr_cell_list.o jr_cluster.o order_parameters.o
 
 # ---------  EXECUTABLE -----------#
 EXE2 = PatchyParticles_gibbs

@@ -57,3 +57,5 @@ dkms.conf
 .settings/*
 
 prove/*
+
+*.vscode

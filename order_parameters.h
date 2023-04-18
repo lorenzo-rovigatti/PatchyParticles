@@ -1,6 +1,10 @@
 #ifndef ORDER_PARAMETERS_H
 #define ORDER_PARAMETERS_H
 
+#include "jr_vector.h"
+#include "jr_ordinator.h"
+#include "jr_interaction_map.h"
+
 #define JSCALAR(v,u) (((v)->x)*((u)->x)+((v)->y)*((u)->y)+((v)->z)*((u)->z))
 
 typedef struct _orderparam {

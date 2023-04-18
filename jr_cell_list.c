@@ -3,67 +3,13 @@
 #include <math.h>
 #include <assert.h>
 #include <string.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 
-#include "jvector.h"
-#include "interaction_map.h"
-#include "global_definitions.h"
-#include "secure_search.h"
-#include "smart_allocator.h"
-#include "log.h"
-#include "cell_list.h"
+#include "jr_vector.h"
+#include "jr_interaction_map.h"
+#include "jr_smart_allocator.h"
+#include "jr_cell_list.h"
 
 #define SQR(x) ((x)*(x))
-
-void celllistGetInteractionMap(args *argv,int argc);
-
-void celllistConstructor(FILE *config_file,jvector *pos,int *ncolloids,jvector *box,double *cutoff,interactionmap *interactionList,double *cellsize,
-			 listcell **list,void (**getInteractionMap)(args *argv,int argc),args **interactionMapArguments,int *numinteractionargs)
-{
-	SearchTable *s=searchNew();
-	searchDouble("Cell_size",cellsize,s);
-	searchFile(config_file,s);
-	searchFree(s);
-
-	*list=getList(*box,*cellsize,*ncolloids);
-
-	*numinteractionargs=7;
-	*interactionMapArguments=calloc(*numinteractionargs,sizeof(args));
-	(*interactionMapArguments)[0].argv=(void*)pos;
-	(*interactionMapArguments)[1].argv=(void*)ncolloids;
-	(*interactionMapArguments)[2].argv=(void*)box;
-	(*interactionMapArguments)[3].argv=(void*)interactionList;
-	(*interactionMapArguments)[4].argv=(void*)cellsize;
-	(*interactionMapArguments)[5].argv=(void*)(*list);
-	(*interactionMapArguments)[6].argv=(void*)cutoff;
-
-	*getInteractionMap=&celllistGetInteractionMap;
-
-	logPrint("Cell size: %lf\n",*cellsize);
-}
-
-
-void celllistGetInteractionMap(args *argv,int argc)
-{
-	// lettura degli argomenti
-	jvector *pos=(jvector*)argv[0].argv;
-	int ncolloids=*((int*)argv[1].argv);
-	jvector *box=(jvector*)argv[2].argv;
-	interactionmap *im=(interactionmap *)argv[3].argv;
-	double cellsize=*((double*)argv[4].argv);
-	listcell *list=(listcell*)argv[5].argv;
-	double cutoff=*((double*)argv[6].argv);
-
-	fullUpdateList(list,pos,ncolloids,*box,cellsize);
-
-	#ifdef NN
-	memset(im->howmany,0,ncolloids*sizeof(int));
-	calculateSystemInteractionMapOrdered(list,im,pos,box,cutoff);
-	#else
-	calculateSystemInteractionMap(list,im,pos,box,cutoff);
-	#endif
-}
 
 
 // GENERIC FUNCTIONS

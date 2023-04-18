@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 
-#include "cluster.h"
+#include "jr_cluster.h"
 
 
 clusters* getClusters(int ncolloids)

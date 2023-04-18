@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ordinator.h"
+#include "jr_ordinator.h"
 
 
 ordinator *getOrdinator(int maxelements)

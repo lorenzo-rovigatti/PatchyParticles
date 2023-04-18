@@ -16,6 +16,7 @@
 #include "MC.h"
 #include "output.h"
 #include "utils.h"
+#include "order_parameters.h"
 
 
 #define Matrix2D(array,dim1,dim2,type)                                         \
@@ -425,7 +426,11 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	syst->r_cut = 1. + syst->kf_delta;
 	cells_init(syst, output_files, syst->r_cut);
 	cells_fill(syst);
-	
+
+
+
+	// order parameters
+	crystalsConstructor(input,output_files,syst);
 }
 
 void system_free(System *syst) {
@@ -457,6 +462,8 @@ void system_free(System *syst) {
 	Free2D(syst->color);
 	Free2D(syst->bonding_volume_units);
 	free(syst->species_count);
+
+	freeCrystals();
 
 }
 

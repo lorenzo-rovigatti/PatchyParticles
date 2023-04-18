@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "bilista.h"
+#include "jr_bilista.h"
 
 bilista* bilistaGet(int size)
 {
