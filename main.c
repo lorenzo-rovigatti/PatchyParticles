@@ -11,6 +11,7 @@
 #include "parse_input.h"
 #include "system.h"
 #include "utils.h"
+#include "order_parameters.h"
 
 int stop = 0;
 void gbl_terminate(int arg) {
@@ -70,6 +71,10 @@ int main(int argc, char *argv[]) {
 	getInputLLInt(&input, "Steps", &steps, 1);
 	steps += output_files.start_from;
 
+	// exit condition
+	double exit_x_fraction=1.1;
+	getInputDouble(&input,"Stop_at_crystalline_fraction",&exit_x_fraction,0);
+
 	/**
 	 * Main loop
 	 */
@@ -90,6 +95,15 @@ int main(int argc, char *argv[]) {
 
 				if(syst.ensemble == BSUS) bsus_update_histo(&syst);
 			}
+
+			int x_size=getCurrentSize();
+
+			if (x_size>syst.N*exit_x_fraction)
+			{
+				output_log_msg(&output_files, "Exiting at crystal size: %d\n",x_size);
+				break;
+			}
+
 		}
 
 		/**

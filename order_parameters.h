@@ -45,7 +45,7 @@ typedef struct {
 void crystalsConstructor(input_file *input,Output *output_files,System *syst);
 void freeCrystals();
 double getOrderParameter(System *syst,int *num_solid);
-
+int getCurrentSize();
 
 
 #endif

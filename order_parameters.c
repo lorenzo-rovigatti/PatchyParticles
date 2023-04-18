@@ -41,6 +41,7 @@ static char OP_code;
 static orderparam *OP;
 static complex double ***Punt_qlm;
 
+static int Current_size;
 
 
 static interactionmap *Coherent_map;
@@ -1200,7 +1201,7 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
     Coherent_map=createInteractionMap(ncolloids,MaxNeighbours);
     Num_coherent=calloc(ncolloids,sizeof(int));
 
-
+	Current_size=0;
 
 
 }
@@ -1336,8 +1337,15 @@ double getOrderParameter(System *syst,int *num_solid)
 	if ( (max_size==0) && (*num_solid>0) )
 		max_size=1;
 
+	Current_size=max_size;
+
 	return (double)max_size;
 }
 
 
+
+int getCurrentSize()
+{
+	return Current_size;
+}
 
