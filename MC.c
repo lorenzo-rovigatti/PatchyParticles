@@ -597,6 +597,15 @@ void MC_change_volume(System *syst, Output *IO) {
 	syst->box[dir] = new_side;
 	double rescale_factor = new_side / old_side;
 
+
+	// rescale particles' positions
+	for(i = 0; i < syst->N; i++) {
+		PatchyParticle *p = syst->particles + i;
+		p->r[dir] *= rescale_factor;
+	}
+
+
+
 	// if we compress the system too much we'll have to recompute the cells
 	if((syst->box[dir] / syst->cells->N_side[dir]) < syst->r_cut) {
 		cells_free(syst->cells);
@@ -604,11 +613,6 @@ void MC_change_volume(System *syst, Output *IO) {
 		cells_fill(syst);
 	}
 
-	// rescale particles' positions
-	for(i = 0; i < syst->N; i++) {
-		PatchyParticle *p = syst->particles + i;
-		p->r[dir] *= rescale_factor;
-	}
 
 	// compute the new energy
 	int overlap_found = 0;
@@ -628,7 +632,6 @@ void MC_change_volume(System *syst, Output *IO) {
 		syst->accepted[VOLUME]++;
 	}
 	else {
-//		if(!overlap_found) printf("rejected %lf -- %lf %lf %lf\n", syst->P*delta_V, delta_E, (syst->N + 1) * log(rescale_factor), exp(exp_arg));
 		for(i = 0; i < syst->N; i++) {
 			PatchyParticle *p = syst->particles + i;
 			p->r[dir] /= rescale_factor;
@@ -656,12 +659,7 @@ void MC_change_Lx(System *syst, Output *IO) {
 		return;
 	}
 
-	// if we compress the system too much we'll have to recompute the cells
-	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
-		cells_free(syst->cells);
-		cells_init(syst, IO, syst->r_cut);
-		cells_fill(syst);
-	}
+	// rescale particles' positions
 
 	vector rescale_factors = {
 		syst->box[0] / old_sides[0],
@@ -669,13 +667,21 @@ void MC_change_Lx(System *syst, Output *IO) {
 		syst->box[2] / old_sides[2]
 	};
 
-	// rescale particles' positions
+	
 	int i;
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->r[0] *= rescale_factors[0];
 		p->r[1] *= rescale_factors[1];
 		p->r[2] *= rescale_factors[2];
+	}
+
+
+	// if we compress the system too much we'll have to recompute the cells
+	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
+		cells_free(syst->cells);
+		cells_init(syst, IO, syst->r_cut);
+		cells_fill(syst);
 	}
 
 	// compute the new energy
