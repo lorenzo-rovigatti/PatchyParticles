@@ -77,6 +77,7 @@ typedef struct System {
 	int dynamics;
 	int ensemble;
 	int Lx_move;
+	int piston_direction;
 	void (*do_dynamics)(struct System *, Output *);
 	void (*do_ensemble)(struct System *, Output *);
 
@@ -104,6 +105,7 @@ typedef struct System {
 	double Lx_change_max;
 	double Lyz_min;
 	double Lyz_max;
+
 
 	double kf_delta, kf_cosmax, kf_sqr_rcut;
 	double r_cut;

@@ -237,6 +237,17 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	if(syst->ensemble == NPT) {
 		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
 		getInputDouble(input, "P", &syst->P, 1);
+
+		int piston_direction=-1;
+		int found_pdirection=getInputInt(input,"Piston_direction",&piston_direction,0);
+
+		if ((found_pdirection==KEY_NOT_FOUND) || (piston_direction<0) || (piston_direction>3))
+		{
+			syst->piston_direction=-1;
+		}
+		else
+			syst->piston_direction=piston_direction;
+
 	}
 	else {
 		getInputInt(input, "Lx_move", &syst->Lx_move, 0);

@@ -580,7 +580,13 @@ void MC_change_volume(System *syst, Output *IO) {
 	double initial_V = syst->box[0] * syst->box[1] * syst->box[2];
 
 	// pick a random direction
-	int dir = drand48() * 3;
+	int dir;
+
+	if (syst->piston_direction==-1)
+		dir = drand48() * 3;
+	else
+		dir=syst->piston_direction;
+	
 	// extract a random volume change
 	double ln_final_V = log(initial_V) + (drand48() - 0.5)*syst->rescale_factor_max;
 	double final_V = exp(ln_final_V);
