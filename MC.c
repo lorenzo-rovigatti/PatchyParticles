@@ -10,6 +10,9 @@
 #include "output.h"
 #include "utils.h"
 #include "vmmc.h"
+#include "order_parameters.h"
+#include "jr_cluster.h"
+#include "jr_sus.h"
 
 #include <float.h>
 #include <math.h>
@@ -181,6 +184,161 @@ void do_GIBBS(System *syst1,System *syst2,Output *output_files1,Output *output_f
 
 }
 
+void do_CNTUS(System *syst, Output *output_files)
+{
+	syst->tries[USCNTMOVE]++;
+
+	// INFORMATIONS SAVE
+	double old_potential=syst->energy;
+	vector old_box;
+	old_box[0]=syst->box[0];
+	old_box[1]=syst->box[1];
+	old_box[2]=syst->box[2];
+
+	int t;
+	for (t=0;t<5;t++)
+	{
+		// NPT STEP
+		do_NPT(syst,output_files);
+	}
+
+
+	double arg=syst->energy-old_potential;
+	arg=0.;
+	
+
+	// calculate the new order parameters
+	int num_solid;
+	int new_OP=(int)getOrderParameter(syst,&num_solid);
+
+
+	if ((new_OP>syst->US_OP_MAX) || (new_OP<syst->US_OP_MIN))
+	{
+		// reject move
+		
+		// return to the old trajectory
+		int i;
+		for (i=0;i<syst->N;i++)
+		{
+			syst->particles[i].r[0]=syst->US_old_pos[i*3+0];
+			syst->particles[i].r[1]=syst->US_old_pos[i*3+1];
+			syst->particles[i].r[2]=syst->US_old_pos[i*3+2];
+
+			syst->particles[i].orientation[0][0]=syst->US_old_orientation[i*9+0];
+			syst->particles[i].orientation[0][1]=syst->US_old_orientation[i*9+1];
+			syst->particles[i].orientation[0][2]=syst->US_old_orientation[i*9+2];
+
+			syst->particles[i].orientation[1][0]=syst->US_old_orientation[i*9+3];
+			syst->particles[i].orientation[1][1]=syst->US_old_orientation[i*9+4];
+			syst->particles[i].orientation[1][2]=syst->US_old_orientation[i*9+5];
+
+			syst->particles[i].orientation[2][0]=syst->US_old_orientation[i*9+6];
+			syst->particles[i].orientation[2][1]=syst->US_old_orientation[i*9+7];
+			syst->particles[i].orientation[2][2]=syst->US_old_orientation[i*9+8];
+		}
+
+		syst->energy=old_potential;
+
+		syst->box[0]=old_box[0];
+		syst->box[1]=old_box[1];
+		syst->box[2]=old_box[2];
+
+		updateHistograms(syst->US_OP,syst->US_OP_0,syst->US_k,syst->T);
+
+		return;
+	}
+
+	// accettazione della traiettoria
+	if (syst->US_bias_type==1)
+	{
+		// cnt potential
+		// US_k e' beta\Delta\mu
+		// US_OP_0 e' la size critica
+
+		double arg_new=syst->T*syst->US_k*pow(new_OP,2./3.)*(pow(new_OP,1./3.)-0.5*3*pow(syst->US_OP_0,1./3.));
+		double arg_old=syst->T*syst->US_k*pow(syst->US_OP,2./3.)*(pow(syst->US_OP,1./3.)-0.5*3*pow(syst->US_OP_0,1./3.));
+
+		arg+=arg_new-arg_old;
+	}
+	else
+	{
+		// harmonic potential
+
+		arg+=0.5*syst->US_k*(SQR(new_OP-syst->US_OP_0)-SQR(syst->US_OP-syst->US_OP_0));
+	}
+
+
+	if ( (arg<=0.) || (drand48()<exp(-(arg)/syst->T)) )
+	{
+		// accepted trajectory
+		syst->accepted[USCNTMOVE]++;
+
+		// update order parameters
+		syst->US_OP=new_OP;
+
+		// save the trajectory
+		int i;
+		for (i=0;i<syst->N;i++)
+		{
+			syst->US_old_pos[i*3+0]=syst->particles[i].r[0];
+			syst->US_old_pos[i*3+1]=syst->particles[i].r[1];
+			syst->US_old_pos[i*3+2]=syst->particles[i].r[2];
+
+			syst->US_old_orientation[i*9+0]=syst->particles[i].orientation[0][0];
+			syst->US_old_orientation[i*9+1]=syst->particles[i].orientation[0][1];
+			syst->US_old_orientation[i*9+2]=syst->particles[i].orientation[0][2];
+
+			syst->US_old_orientation[i*9+3]=syst->particles[i].orientation[1][0];
+			syst->US_old_orientation[i*9+4]=syst->particles[i].orientation[1][1];
+			syst->US_old_orientation[i*9+5]=syst->particles[i].orientation[1][2];
+
+			syst->US_old_orientation[i*9+6]=syst->particles[i].orientation[2][0];
+			syst->US_old_orientation[i*9+7]=syst->particles[i].orientation[2][1];
+			syst->US_old_orientation[i*9+8]=syst->particles[i].orientation[2][2];
+		}
+		
+
+		saveClusterDistribution();
+	}
+	else
+	{
+		// rejected trajectory
+
+		// return to the old trajectory
+		int i;
+		for (i=0;i<syst->N;i++)
+		{
+			syst->particles[i].r[0]=syst->US_old_pos[i*3+0];
+			syst->particles[i].r[1]=syst->US_old_pos[i*3+1];
+			syst->particles[i].r[2]=syst->US_old_pos[i*3+2];
+
+			syst->particles[i].orientation[0][0]=syst->US_old_orientation[i*9+0];
+			syst->particles[i].orientation[0][1]=syst->US_old_orientation[i*9+1];
+			syst->particles[i].orientation[0][2]=syst->US_old_orientation[i*9+2];
+
+			syst->particles[i].orientation[1][0]=syst->US_old_orientation[i*9+3];
+			syst->particles[i].orientation[1][1]=syst->US_old_orientation[i*9+4];
+			syst->particles[i].orientation[1][2]=syst->US_old_orientation[i*9+5];
+
+			syst->particles[i].orientation[2][0]=syst->US_old_orientation[i*9+6];
+			syst->particles[i].orientation[2][1]=syst->US_old_orientation[i*9+7];
+			syst->particles[i].orientation[2][2]=syst->US_old_orientation[i*9+8];
+		}
+
+		syst->energy=old_potential;
+
+		syst->box[0]=old_box[0];
+		syst->box[1]=old_box[1];
+		syst->box[2]=old_box[2];
+
+
+	}
+
+	// sampling degli istogrammi
+	updateHistograms(syst->US_OP,syst->US_OP_0,syst->US_k,syst->T);
+
+}
+
 void MC_init(input_file *input, System *syst, Output *IO) {
 	/**
 	 * Here we set the pointer to the function that will be used to make a Monte Carlo step
@@ -216,6 +374,9 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		break;
 	case GIBBS:
 		syst->do_ensemble = NULL;
+		break;
+	case CNTUS:
+		syst->do_ensemble=&do_CNTUS;
 		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);

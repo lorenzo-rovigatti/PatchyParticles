@@ -20,6 +20,19 @@ typedef struct _cluster_distribution {
 } cluster_distribution;
 
 
+
+// Module ///////////////////////////
+/////////////////////////////////////
+
+void clustersConstructor(int num);
+void clustersFree();
+int clustersGetLargetCluster(int ncolloids,int *ImSolid,interactionmap *ime,int *num_solid);
+void saveClusterDistribution();
+double* clustersGetCsd(int *size);
+
+/////////////////////////////////////
+
+
 clusters* getClusters(int ncolloids);
 
 void freeClusters(clusters *c);

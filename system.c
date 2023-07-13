@@ -17,6 +17,8 @@
 #include "output.h"
 #include "utils.h"
 #include "order_parameters.h"
+#include "jr_cluster.h"
+#include "jr_sus.h"
 
 
 #define Matrix2D(array,dim1,dim2,type)                                         \
@@ -442,6 +444,66 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	// order parameters
 	crystalsConstructor(input,output_files,syst);
+
+	// UMBRELLA SAMPLING ENSEMBLE
+	if(syst->ensemble == CNTUS)
+	{
+		// NPT section
+		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
+		getInputDouble(input, "P", &syst->P, 1);
+
+		// US section
+		getInputInt(input,"US_bias_type",&syst->US_bias_type,1);
+		getInputDouble(input,"US_harmonic_amplitude",&syst->US_k,1);
+		getInputInt(input,"US_steps",&syst->US_steps,1);
+		getInputDouble(input,"US_OP_0",&syst->US_OP_0,1);
+		getInputDouble(input,"US_MAX_OP",&syst->US_OP_MAX,1);
+		getInputDouble(input,"US_MIN_OP",&syst->US_OP_MIN,1);
+
+		if(syst->N < syst->US_OP_MIN) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->US_OP_MIN);
+		if(syst->N > syst->US_OP_MAX) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->US_OP_MAX);
+
+
+		// allocations
+		syst->US_old_pos=malloc(3*syst->N*sizeof(double));
+		syst->US_old_orientation=malloc(9*syst->N*sizeof(double));
+
+		// cluster section
+		clustersConstructor(syst->N);
+		susConstructor(input,syst->N);
+
+
+		int num_solid;
+		syst->US_OP=(int)getOrderParameter(syst,&num_solid);
+		saveClusterDistribution();
+
+		output_exit(output_files,"Initial crystal size: %d\n",syst->US_OP);
+
+
+		// copy initial conditions
+		int ii;
+		for (ii=0;ii<syst->N;ii++)
+		{
+			syst->US_old_pos[ii*3+0]=syst->particles[ii].r[0];
+			syst->US_old_pos[ii*3+1]=syst->particles[ii].r[1];
+			syst->US_old_pos[ii*3+2]=syst->particles[ii].r[2];
+
+			syst->US_old_orientation[ii*9+0]=syst->particles[ii].orientation[0][0];
+			syst->US_old_orientation[ii*9+1]=syst->particles[ii].orientation[0][1];
+			syst->US_old_orientation[ii*9+2]=syst->particles[ii].orientation[0][2];
+
+			syst->US_old_orientation[ii*9+3]=syst->particles[ii].orientation[1][0];
+			syst->US_old_orientation[ii*9+4]=syst->particles[ii].orientation[1][1];
+			syst->US_old_orientation[ii*9+5]=syst->particles[ii].orientation[1][2];
+
+			syst->US_old_orientation[ii*9+6]=syst->particles[ii].orientation[2][0];
+			syst->US_old_orientation[ii*9+7]=syst->particles[ii].orientation[2][1];
+			syst->US_old_orientation[ii*9+8]=syst->particles[ii].orientation[2][2];
+		}
+
+	}
+
+
 }
 
 void system_free(System *syst) {
@@ -465,6 +527,12 @@ void system_free(System *syst) {
 		free(syst->bsus_tm);
 		free(syst->bsus_normvec);
 		free(syst->bsus_pm);
+	}
+
+	if (syst->ensemble==CNTUS)
+	{
+		free(syst->US_old_pos);
+		free(syst->US_old_orientation);
 	}
 
 	free(syst->ncolorint);

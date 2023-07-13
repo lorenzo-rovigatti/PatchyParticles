@@ -8,7 +8,7 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#define N_MOVES 9
+#define N_MOVES 10
 #define ROTO_TRASL 0
 #define AVB 1
 #define ADD 2
@@ -18,6 +18,7 @@
 #define VOLUME 6
 #define LX 7
 #define TRANSFER 8
+#define USCNTMOVE 9
 
 #define NVT 0
 #define GC 1
@@ -25,6 +26,7 @@
 #define NPT 5
 #define BSUS 4
 #define GIBBS 6
+#define CNTUS 7
 
 #define RTMC 0
 #define VMMC 1
@@ -132,6 +134,17 @@ typedef struct System {
 	double gibbsVolumeDeltamax;
 	/////////////////////////////////
 
+	// UMBRELLA SAMPLING
+	double US_OP;
+	double US_OP_MIN;
+	double US_OP_MAX;
+	double *US_old_pos;
+	double *US_old_orientation;
+	int US_bias_type;
+	double US_k;
+	int US_steps;
+	double US_OP_0;
+		
 
 } System;
 
