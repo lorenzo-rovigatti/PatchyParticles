@@ -199,7 +199,8 @@ void do_CNTUS(System *syst, Output *output_files)
 	for (t=0;t<5;t++)
 	{
 		// NPT STEP
-		do_NPT(syst,output_files);
+		//do_NPT(syst,output_files);
+		do_NVT(syst,output_files);
 	}
 
 
@@ -210,6 +211,11 @@ void do_CNTUS(System *syst, Output *output_files)
 	// calculate the new order parameters
 	int num_solid;
 	int new_OP=(int)getOrderParameter(syst,&num_solid);
+
+	if (new_OP<num_solid)
+	{
+		printf("eccoci\n");
+	}
 
 
 	if ((new_OP>syst->US_OP_MAX) || (new_OP<syst->US_OP_MIN))
@@ -297,8 +303,8 @@ void do_CNTUS(System *syst, Output *output_files)
 			syst->US_old_orientation[i*9+8]=syst->particles[i].orientation[2][2];
 		}
 		
-
-		saveClusterDistribution();
+		printf("quante op %d num_solid %d\n",new_OP,num_solid);
+		saveClusterDistribution(num_solid);
 	}
 	else
 	{

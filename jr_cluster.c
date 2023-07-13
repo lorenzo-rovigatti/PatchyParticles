@@ -7,8 +7,8 @@
 #include "jr_interaction_map.h"
 #include "jr_cluster.h"
 
-static bilista *List_solid;
-static clusters *Cluster_solid;
+//static bilista *List_solid;
+//static clusters *Cluster_solid;
 static double *Csd_buffer;
 static int Csd_size;
 
@@ -16,8 +16,8 @@ static int Csd_size;
 
 void clustersConstructor(int num)
 {
-	Cluster_solid=getClusters(num);
-	List_solid=bilistaGet(num);
+	//Cluster_solid=getClusters(num);
+	//List_solid=bilistaGet(num);
 
 	Csd_size=num;
 	Csd_buffer=calloc(Csd_size,sizeof(double));
@@ -26,11 +26,11 @@ void clustersConstructor(int num)
 void clustersFree()
 {
 	free(Csd_buffer);
-	freeClusters(Cluster_solid);
-	bilistaFree(List_solid);
+	//freeClusters(Cluster_solid);
+	//bilistaFree(List_solid);
 }
 
-
+/*
 int clustersGetLargetCluster(int ncolloids,int *ImSolid,interactionmap *ime,int *num_solid)
 {
 	resetClusters(Cluster_solid,ncolloids);
@@ -79,10 +79,10 @@ int clustersGetLargetCluster(int ncolloids,int *ImSolid,interactionmap *ime,int 
 
 		return max_size;
 }
+*/
 
 
-
-void saveClusterDistribution()
+void saveClusterDistribution(int num_solid)
 {
 	int i;
 	for (i=0;i<Csd_size;i++)
@@ -120,8 +120,13 @@ void saveClusterDistribution()
 	Csd_buffer[0]=Csd_size-i;
 
 #ifdef DEBUG
-	assert(i==Num_solid);
+	if (i!=num_solid)
+	{
+		printf("eccoci i %d num_solid %d\n",i,num_solid);
+	}
+	assert(i==num_solid);
 #endif
+
 }
 
 double* clustersGetCsd(int *size)

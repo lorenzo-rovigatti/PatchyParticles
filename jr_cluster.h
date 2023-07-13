@@ -27,7 +27,7 @@ typedef struct _cluster_distribution {
 void clustersConstructor(int num);
 void clustersFree();
 int clustersGetLargetCluster(int ncolloids,int *ImSolid,interactionmap *ime,int *num_solid);
-void saveClusterDistribution();
+void saveClusterDistribution(int num_solid);
 double* clustersGetCsd(int *size);
 
 /////////////////////////////////////

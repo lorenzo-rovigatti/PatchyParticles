@@ -449,8 +449,8 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	if(syst->ensemble == CNTUS)
 	{
 		// NPT section
-		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
-		getInputDouble(input, "P", &syst->P, 1);
+		//getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
+		//getInputDouble(input, "P", &syst->P, 1);
 
 		// US section
 		getInputInt(input,"US_bias_type",&syst->US_bias_type,1);
@@ -460,9 +460,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		getInputDouble(input,"US_MAX_OP",&syst->US_OP_MAX,1);
 		getInputDouble(input,"US_MIN_OP",&syst->US_OP_MIN,1);
 
-		if(syst->N < syst->US_OP_MIN) output_exit(output_files, "Number of particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->N, syst->US_OP_MIN);
-		if(syst->N > syst->US_OP_MAX) output_exit(output_files, "Number of particles %d is larger than Umbrella_sampling_max (%d)\n", syst->N, syst->US_OP_MAX);
-
+		
 
 		// allocations
 		syst->US_old_pos=malloc(3*syst->N*sizeof(double));
@@ -475,9 +473,15 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 		int num_solid;
 		syst->US_OP=(int)getOrderParameter(syst,&num_solid);
-		saveClusterDistribution();
 
-		output_exit(output_files,"Initial crystal size: %d\n",syst->US_OP);
+		if(syst->US_OP < syst->US_OP_MIN) output_exit(output_files, "Number of crystalline particles %d is smaller than Umbrella_sampling_min (%d)\n", syst->US_OP, syst->US_OP_MIN);
+		if(syst->US_OP > syst->US_OP_MAX) output_exit(output_files, "Number of crystalline particles %d is larger than Umbrella_sampling_max (%d)\n", syst->US_OP, syst->US_OP_MAX);
+
+
+		saveClusterDistribution(num_solid);
+
+		output_log_msg(output_files,"Initial crystal size: %d\n",syst->US_OP);
+		
 
 
 		// copy initial conditions
