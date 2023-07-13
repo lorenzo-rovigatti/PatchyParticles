@@ -17,7 +17,11 @@
 void cells_init(System *syst, Output *output_files, double rcut) {
 	syst->cells = (Cells *) malloc(sizeof(Cells));
 
+	//syst->old_cells = (Cells *) malloc(sizeof(Cells));
+
 	Cells *cells = syst->cells;
+	//Cells *old_cells = syst->old_cells;
+
 	int i;
 	for(i = 0; i < 3; i++) {
 		cells->N_side[i] = floor(syst->box[i] / rcut);
@@ -30,7 +34,11 @@ void cells_init(System *syst, Output *output_files, double rcut) {
 	cells->N = cells->N_side[0] * cells->N_side[1] * cells->N_side[2];
 	cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
 	cells->next = malloc(sizeof(PatchyParticle *) * syst->N_max);
-	output_log_msg(output_files, "Cells per side: (%d, %d, %d), total: %d\n", cells->N_side[0], cells->N_side[1], cells->N_side[2], cells->N);
+
+	//old_cells->heads = malloc(sizeof(PatchyParticle *) * cells->N);
+	//old_cells->next = malloc(sizeof(PatchyParticle *) * syst->N_max);
+	
+	//output_log_msg(output_files, "Cells per side: (%d, %d, %d), total: %d\n", cells->N_side[0], cells->N_side[1], cells->N_side[2], cells->N);
 
 	for(i = 0; i < cells->N; i++) cells->heads[i] = NULL;
 	for(i = 0; i < syst->N_max; i++) cells->next[i] = NULL;
@@ -80,3 +88,39 @@ void cells_free(Cells *cells) {
 	free(cells->next);
 	free(cells);
 }
+
+/*
+void cells_save(System *syst)
+{
+	Cells *cells = syst->cells;
+
+	Cells *old_cells = syst->old_cells;
+
+	old_cells->N_side[0]=cells->N_side[0];
+	old_cells->N_side[1]=cells->N_side[1];
+	old_cells->N_side[2]=cells->N_side[2];
+
+	old_cells->N=cells->N;
+
+	int i;
+	for(i = 0; i < cells->N; i++) old_cells->heads[i] = cells->heads[i];
+	for(i = 0; i < syst->N_max; i++) old_cells->next[i] = cells->next[i];
+}
+
+void cells_restore(System *syst)
+{
+	Cells *cells = syst->cells;
+	Cells *old_cells = syst->old_cells;
+
+	cells->N_side[0]=old_cells->N_side[0];
+	cells->N_side[1]=old_cells->N_side[1];
+	cells->N_side[2]=old_cells->N_side[2];
+
+	cells->N=old_cells->N;
+
+	int i;
+	for(i = 0; i < cells->N; i++) cells->heads[i] = old_cells->heads[i];
+	for(i = 0; i < syst->N_max; i++) cells->next[i] = old_cells->next[i];
+}
+
+*/

@@ -195,6 +195,29 @@ void do_CNTUS(System *syst, Output *output_files)
 	old_box[1]=syst->box[1];
 	old_box[2]=syst->box[2];
 
+	//cells_save(syst);
+
+	// save the trajectory
+	int i;
+	for (i=0;i<syst->N;i++)
+	{
+		syst->US_old_pos[i*3+0]=syst->particles[i].r[0];
+		syst->US_old_pos[i*3+1]=syst->particles[i].r[1];
+		syst->US_old_pos[i*3+2]=syst->particles[i].r[2];
+
+		syst->US_old_orientation[i*9+0]=syst->particles[i].orientation[0][0];
+		syst->US_old_orientation[i*9+1]=syst->particles[i].orientation[0][1];
+		syst->US_old_orientation[i*9+2]=syst->particles[i].orientation[0][2];
+
+		syst->US_old_orientation[i*9+3]=syst->particles[i].orientation[1][0];
+		syst->US_old_orientation[i*9+4]=syst->particles[i].orientation[1][1];
+		syst->US_old_orientation[i*9+5]=syst->particles[i].orientation[1][2];
+
+		syst->US_old_orientation[i*9+6]=syst->particles[i].orientation[2][0];
+		syst->US_old_orientation[i*9+7]=syst->particles[i].orientation[2][1];
+		syst->US_old_orientation[i*9+8]=syst->particles[i].orientation[2][2];
+	}
+
 	int t;
 	for (t=0;t<5;t++)
 	{
@@ -212,10 +235,6 @@ void do_CNTUS(System *syst, Output *output_files)
 	int num_solid;
 	int new_OP=(int)getOrderParameter(syst,&num_solid);
 
-	if (new_OP<num_solid)
-	{
-		printf("eccoci\n");
-	}
 
 
 	if ((new_OP>syst->US_OP_MAX) || (new_OP<syst->US_OP_MIN))
@@ -223,7 +242,7 @@ void do_CNTUS(System *syst, Output *output_files)
 		// reject move
 		
 		// return to the old trajectory
-		int i;
+		int j;
 		for (i=0;i<syst->N;i++)
 		{
 			syst->particles[i].r[0]=syst->US_old_pos[i*3+0];
@@ -241,6 +260,13 @@ void do_CNTUS(System *syst, Output *output_files)
 			syst->particles[i].orientation[2][0]=syst->US_old_orientation[i*9+6];
 			syst->particles[i].orientation[2][1]=syst->US_old_orientation[i*9+7];
 			syst->particles[i].orientation[2][2]=syst->US_old_orientation[i*9+8];
+
+			for(j = 0; j < syst->particles[i].n_patches; j++)
+				MATRIX_VECTOR_MULTIPLICATION(syst->particles[i].orientation, syst->particles[i].base_patches[j], syst->particles[i].patches[j]);
+
+			cells_free(syst->cells);
+			cells_init(syst, output_files, syst->r_cut);
+			cells_fill(syst);
 		}
 
 		syst->energy=old_potential;
@@ -248,6 +274,8 @@ void do_CNTUS(System *syst, Output *output_files)
 		syst->box[0]=old_box[0];
 		syst->box[1]=old_box[1];
 		syst->box[2]=old_box[2];
+
+		//cells_restore(syst);
 
 		updateHistograms(syst->US_OP,syst->US_OP_0,syst->US_k,syst->T);
 
@@ -282,28 +310,8 @@ void do_CNTUS(System *syst, Output *output_files)
 		// update order parameters
 		syst->US_OP=new_OP;
 
-		// save the trajectory
-		int i;
-		for (i=0;i<syst->N;i++)
-		{
-			syst->US_old_pos[i*3+0]=syst->particles[i].r[0];
-			syst->US_old_pos[i*3+1]=syst->particles[i].r[1];
-			syst->US_old_pos[i*3+2]=syst->particles[i].r[2];
-
-			syst->US_old_orientation[i*9+0]=syst->particles[i].orientation[0][0];
-			syst->US_old_orientation[i*9+1]=syst->particles[i].orientation[0][1];
-			syst->US_old_orientation[i*9+2]=syst->particles[i].orientation[0][2];
-
-			syst->US_old_orientation[i*9+3]=syst->particles[i].orientation[1][0];
-			syst->US_old_orientation[i*9+4]=syst->particles[i].orientation[1][1];
-			syst->US_old_orientation[i*9+5]=syst->particles[i].orientation[1][2];
-
-			syst->US_old_orientation[i*9+6]=syst->particles[i].orientation[2][0];
-			syst->US_old_orientation[i*9+7]=syst->particles[i].orientation[2][1];
-			syst->US_old_orientation[i*9+8]=syst->particles[i].orientation[2][2];
-		}
 		
-		printf("quante op %d num_solid %d\n",new_OP,num_solid);
+		
 		saveClusterDistribution(num_solid);
 	}
 	else
@@ -311,7 +319,7 @@ void do_CNTUS(System *syst, Output *output_files)
 		// rejected trajectory
 
 		// return to the old trajectory
-		int i;
+		int j;
 		for (i=0;i<syst->N;i++)
 		{
 			syst->particles[i].r[0]=syst->US_old_pos[i*3+0];
@@ -329,6 +337,13 @@ void do_CNTUS(System *syst, Output *output_files)
 			syst->particles[i].orientation[2][0]=syst->US_old_orientation[i*9+6];
 			syst->particles[i].orientation[2][1]=syst->US_old_orientation[i*9+7];
 			syst->particles[i].orientation[2][2]=syst->US_old_orientation[i*9+8];
+
+			for(j = 0; j < syst->particles[i].n_patches; j++) 
+				MATRIX_VECTOR_MULTIPLICATION(syst->particles[i].orientation, syst->particles[i].base_patches[j], syst->particles[i].patches[j]);
+
+			cells_free(syst->cells);
+			cells_init(syst, output_files, syst->r_cut);
+			cells_fill(syst);
 		}
 
 		syst->energy=old_potential;
@@ -337,6 +352,7 @@ void do_CNTUS(System *syst, Output *output_files)
 		syst->box[1]=old_box[1];
 		syst->box[2]=old_box[2];
 
+		//cells_restore(syst);
 
 	}
 

@@ -27,4 +27,8 @@ void cells_fill(System *syst);
 void cells_check(System *syst, Output *output_files);
 void cells_free(Cells *cells);
 
+//void cells_save(System *syst);
+//void cells_restore(System *syst);
+
+
 #endif /* CELLS_H_ */

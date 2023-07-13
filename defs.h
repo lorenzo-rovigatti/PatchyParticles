@@ -113,6 +113,7 @@ typedef struct System {
 	double r_cut;
 
 	Cells *cells;
+	Cells *old_cells;
 
 	int seed;
 	PatchyParticle *particles;

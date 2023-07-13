@@ -483,7 +483,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		output_log_msg(output_files,"Initial crystal size: %d\n",syst->US_OP);
 		
 
-
+		/*
 		// copy initial conditions
 		int ii;
 		for (ii=0;ii<syst->N;ii++)
@@ -504,6 +504,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			syst->US_old_orientation[ii*9+7]=syst->particles[ii].orientation[2][1];
 			syst->US_old_orientation[ii*9+8]=syst->particles[ii].orientation[2][2];
 		}
+		*/
 
 	}
 

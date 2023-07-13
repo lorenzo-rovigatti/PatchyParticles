@@ -29,6 +29,10 @@ void clustersFree();
 int clustersGetLargetCluster(int ncolloids,int *ImSolid,interactionmap *ime,int *num_solid);
 void saveClusterDistribution(int num_solid);
 double* clustersGetCsd(int *size);
+void clustersAddSolid(int particle);
+void clustersJoinCluster(int particle);
+void clustersReset(int ncolloids);
+int clustersAddBond(int particle1,int particle2);
 
 /////////////////////////////////////
 

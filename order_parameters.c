@@ -50,9 +50,8 @@ static int *Num_coherent;
 static double *Buffer;
 
 
-static bilista *List_solid;
-//static int Num_solid=0;
-static clusters *Cluster_solid;
+//static bilista *List_solid;
+//static clusters *Cluster_solid;
 
 //static double *Csd_buffer;
 //static int Csd_size;
@@ -1180,8 +1179,10 @@ void crystalsConstructor(input_file *input,Output *output_files,System *syst)
 	output_log_msg(output_files,"Max neighbours %d\n",MaxNeighbours);
 
 	ImSolid=calloc(ncolloids,sizeof(int));
-	Cluster_solid=getClusters(ncolloids);
-	List_solid=bilistaGet(ncolloids);
+
+	// moved to the cluster module
+	//Cluster_solid=getClusters(ncolloids);
+	//List_solid=bilistaGet(ncolloids);
 
 	
     // FRENKEL-like METHOD
@@ -1218,8 +1219,8 @@ void freeCrystals()
 	freeOP(OP,3);
 
 	free(ImSolid);
-	freeClusters(Cluster_solid);
-	bilistaFree(List_solid);
+	//freeClusters(Cluster_solid);
+	//bilistaFree(List_solid);
 
 	freeInteractionMap(Coherent_map);
 	free(Num_coherent);
@@ -1292,9 +1293,12 @@ double getOrderParameter(System *syst,int *num_solid)
 
 	
 	
+	//resetClusters(Cluster_solid,ncolloids);
+    //bilistaReset(List_solid,ncolloids);
 
-	resetClusters(Cluster_solid,ncolloids);
-    bilistaReset(List_solid,ncolloids);
+	clustersReset(ncolloids);
+
+
 
 	*num_solid=0;
 	int max_size=0;
@@ -1303,10 +1307,14 @@ double getOrderParameter(System *syst,int *num_solid)
 	{
 		if (ImSolid[particle1]==1)
 		{
-			bilistaInsert(List_solid,particle1);
+			//bilistaInsert(List_solid,particle1);
+
+			clustersAddSolid(particle1);
+
 			(*num_solid)++;
 
-			addNode(particle1,Cluster_solid);
+			//addNode(particle1,Cluster_solid);
+			clustersJoinCluster(particle1);
 			
 				// USUAL
 				interactionmap *ime=OP->ime;
@@ -1322,9 +1330,10 @@ double getOrderParameter(System *syst,int *num_solid)
 					if (ImSolid[particle2]==1)
 					{
 
-						addNode(particle2,Cluster_solid);
+						//addNode(particle2,Cluster_solid);
+						clustersJoinCluster(particle2);
 
-						int size=addBond(particle1,particle2,Cluster_solid);
+						int size=clustersAddBond(particle1,particle2);
 
 						if (size>max_size)
 							max_size=size;
