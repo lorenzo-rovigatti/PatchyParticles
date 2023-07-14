@@ -443,6 +443,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 
 	// order parameters
+	clustersConstructor(syst->N);
 	crystalsConstructor(input,output_files,syst);
 
 	// UMBRELLA SAMPLING ENSEMBLE
@@ -467,7 +468,6 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->US_old_orientation=malloc(9*syst->N*sizeof(double));
 
 		// cluster section
-		clustersConstructor(syst->N);
 		susConstructor(input,syst->N);
 
 
