@@ -205,6 +205,10 @@ void output_print(Output *output_files, System *syst, llint step) {
 		break;
 	case GIBBS:
 		fprintf(output_files->acc, " %e %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME],syst->accepted[TRANSFER]/ (double) syst->tries[TRANSFER]);
+		break;
+	case CNTUS:
+		fprintf(output_files->acc, " %e", syst->accepted[USCNTMOVE]/ (double) syst->tries[USCNTMOVE]);
+		break;
 	default:
 		break;
 	}
