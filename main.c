@@ -12,6 +12,7 @@
 #include "system.h"
 #include "utils.h"
 #include "order_parameters.h"
+#include "jr_sus.h"
 
 int stop = 0;
 void gbl_terminate(int arg) {
@@ -125,6 +126,11 @@ int main(int argc, char *argv[]) {
 			if(syst.ensemble == BSUS)
 			{
 				output_bsus(&output_files, &syst, curr_step);
+			}
+
+			if (syst.ensemble==CNTUS)
+			{
+				saveResetHistograms(curr_step);
 			}
 		}
 
