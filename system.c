@@ -183,7 +183,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 			}
 
 			if(syst->Lyz_max <= syst->box[1]) {
-				output_exit(output_files, "Lyz_max should be smaller than box size\n");
+				output_exit(output_files, "Lyz_max should be larger than box size\n");
 			}
 
 			/* disabled relative boundaries in favor of absolute ones
