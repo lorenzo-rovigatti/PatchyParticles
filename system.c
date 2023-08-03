@@ -538,6 +538,7 @@ void system_free(System *syst) {
 	{
 		free(syst->US_old_pos);
 		free(syst->US_old_orientation);
+		clustersFree();
 	}
 
 	free(syst->ncolorint);
@@ -548,6 +549,8 @@ void system_free(System *syst) {
 	free(syst->species_count);
 
 	freeCrystals();
+
+
 
 }
 
