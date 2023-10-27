@@ -30,9 +30,9 @@ static int Histo_op_size;
 static int Histo_num_campionamenti;
 
 // histograms names
-static char Pn_prefix[100];
-static char Nn_prefix[100];
-static char Nc_unc_prefix[100];
+static char *Pn_prefix;
+static char *Nn_prefix;
+static char *Nc_unc_prefix;
 static int US_bias_type;
 
 
@@ -40,10 +40,15 @@ void susConstructor(input_file *input,int ncolloids)
 {
 
 	// LOOKUP CONFIGURATION FILE  ////////////////////////////////////////////////////////////
+	//
+	Pn_prefix=malloc(256*sizeof(char));
+	Nn_prefix=malloc(256*sizeof(char));
+	Nc_unc_prefix=malloc(256*sizeof(char));
 
-	int found_pnname=getInputString(input,"Pn_prefix",Pn_prefix,0);
 	int found_nnname=getInputString(input,"Nn_prefix",Nn_prefix,0);
+	int found_pnname=getInputString(input,"Pn_prefix",Pn_prefix,0);
 	int found_barrname=getInputString(input,"Nc_unconstrained_prefix",Nc_unc_prefix,0);
+
 	int found_USbias=getInputInt(input,"US_bias_type",&US_bias_type,0);
 
 
