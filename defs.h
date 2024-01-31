@@ -79,6 +79,7 @@ typedef struct System {
 	int dynamics;
 	int ensemble;
 	int Lx_move;
+	double yz_ratio;
 	int piston_direction;
 	void (*do_dynamics)(struct System *, Output *);
 	void (*do_ensemble)(struct System *, Output *);

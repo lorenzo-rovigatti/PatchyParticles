@@ -112,10 +112,22 @@ int main(int argc, char *argv[]) {
 		 */
 		if(curr_step > 0 && (curr_step % output_files.save_every) == 0) {
 
+			//char name[1024], sname[1024];
 			char name[1024];
 			sprintf(name, "%s/conf_%lld.rrr", output_files.configuration_folder, curr_step);
+			//sprintf(sname, "%s/specie_%lld.rrr", output_files.configuration_folder, curr_step);
 			output_save(&output_files, &syst, curr_step, name);
 			output_save(&output_files, &syst, curr_step, output_files.configuration_last);
+			//output_specie_save(&output_files, &syst, curr_step, sname);
+			//output_specie_save(&output_files, &syst, curr_step, output_files.specie_last);
+
+			if(syst.ensemble == BSUS) {
+				char sname[1024];
+				sprintf(sname, "%s/specie_%lld.rrr", output_files.configuration_folder, curr_step);
+				output_specie_save(&output_files, &syst, curr_step, sname);
+                        	output_specie_save(&output_files, &syst, curr_step, output_files.specie_last);
+
+			}
 
 			if(output_files.save_also_as_mgl) {
 				sprintf(name, "%s/conf_%lld.mgl", output_files.configuration_folder, curr_step);
@@ -144,6 +156,9 @@ int main(int argc, char *argv[]) {
 	 * Print the last configuration and the last line of the output
 	 */
 	output_save(&output_files, &syst, curr_step, output_files.configuration_last);
+	
+        output_specie_save(&output_files, &syst, curr_step, output_files.specie_last);
+	
 	if(output_files.save_also_as_mgl) {
 		output_save_to_mgl(&output_files, &syst, "last.mgl");
 	}

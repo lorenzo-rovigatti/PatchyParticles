@@ -89,7 +89,7 @@ void cells_free(Cells *cells) {
 	free(cells);
 }
 
-/*
+
 void cells_save(System *syst)
 {
 	Cells *cells = syst->cells;
@@ -123,4 +123,4 @@ void cells_restore(System *syst)
 	for(i = 0; i < syst->N_max; i++) cells->next[i] = old_cells->next[i];
 }
 
-*/
+
