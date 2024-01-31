@@ -156,7 +156,12 @@ void output_print(Output *output_files, System *syst, llint step) {
 		fflush(output_files->density);
 	}
 	else if(syst->ensemble != 0) {
-		fprintf(output_files->density, "%lld %lf %d\n", step, syst->N / syst->V, syst->N);
+		//fprintf(output_files->density, "%lld %lf %d %d %d\n", step, syst->N / syst->V, syst->N, syst->species_count[0], syst->species_count[1]);
+		fprintf(output_files->density, "%lld %lf %d", step, syst->N / syst->V, syst->N);
+		int kk;
+                for (kk=0;kk<syst->num_species;kk++)
+                        fprintf(output_files->density, " %d",syst->species_count[kk]);
+                fprintf(output_files->density, "\n");
 		fflush(output_files->density);
 	}
 
@@ -207,6 +212,7 @@ void output_print(Output *output_files, System *syst, llint step) {
 		fprintf(output_files->acc, " %e %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME],syst->accepted[TRANSFER]/ (double) syst->tries[TRANSFER]);
 		break;
 	case CNTUS:
+		fprintf(output_files->acc, " %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME]);
 		fprintf(output_files->acc, " %e", syst->accepted[USCNTMOVE]/ (double) syst->tries[USCNTMOVE]);
 		break;
 	default:
@@ -366,7 +372,7 @@ void output_specie_save(Output *output_files, System *syst, llint step, char *na
 	FILE *out = fopen(name, "w");
 	if(out == NULL) output_exit(output_files, "File '%s' is not writable\n", name);
 
-	fprintf(out,"%d %d\n",syst->N,syst->num_species);
+	fprintf(out,"%d %d %d %d\n",syst->N,syst->num_species, syst->species_count[0], syst->species_count[1]);
 
 	int i;
 	for (i=0;i<syst->N;i++)

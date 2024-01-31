@@ -120,12 +120,18 @@ void do_BSUS_Lx(System *syst, Output *output_files) {
 	for(i = 0; i < syst->N_max; i++) {
 		double R = drand48();
 		if(R < 0.5) {
+			//printf("add_remove\n");
 			MC_add_remove_biased(syst, output_files);
 		}
 		else if(syst->Lx_move && R < (0.5 + 1. / syst->N)) {
+			//printf("lx_move\n");
 			MC_change_Lx(syst, output_files);
 		}
-		else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+		//else if(syst->N > 0) syst->do_dynamics(syst, output_files);
+		else if(syst->N > 0) { 
+			syst->do_dynamics(syst, output_files);
+			//printf("roto\n");
+		}
 	}
 }
 
@@ -222,8 +228,8 @@ void do_CNTUS(System *syst, Output *output_files)
 	for (t=0;t<5;t++)
 	{
 		// NPT STEP
-		//do_NPT(syst,output_files);
-		do_NVT(syst,output_files);
+		do_NPT(syst,output_files);
+		//do_NVT(syst,output_files);
 	}
 
 
@@ -264,9 +270,9 @@ void do_CNTUS(System *syst, Output *output_files)
 			for(j = 0; j < syst->particles[i].n_patches; j++)
 				MATRIX_VECTOR_MULTIPLICATION(syst->particles[i].orientation, syst->particles[i].base_patches[j], syst->particles[i].patches[j]);
 
-			cells_free(syst->cells);
-			cells_init(syst, output_files, syst->r_cut);
-			cells_fill(syst);
+			//cells_free(syst->cells);
+			//cells_init(syst, output_files, syst->r_cut);
+			//cells_fill(syst);
 		}
 
 		syst->energy=old_potential;
@@ -276,6 +282,9 @@ void do_CNTUS(System *syst, Output *output_files)
 		syst->box[2]=old_box[2];
 
 		//cells_restore(syst);
+		cells_free(syst->cells);
+		cells_init(syst, output_files, syst->r_cut);
+		cells_fill(syst);
 
 		updateHistograms(syst->US_OP,syst->US_OP_0,syst->US_k,syst->T);
 
@@ -341,9 +350,9 @@ void do_CNTUS(System *syst, Output *output_files)
 			for(j = 0; j < syst->particles[i].n_patches; j++) 
 				MATRIX_VECTOR_MULTIPLICATION(syst->particles[i].orientation, syst->particles[i].base_patches[j], syst->particles[i].patches[j]);
 
-			cells_free(syst->cells);
-			cells_init(syst, output_files, syst->r_cut);
-			cells_fill(syst);
+			//cells_free(syst->cells);
+			//cells_init(syst, output_files, syst->r_cut);
+			//cells_fill(syst);
 		}
 
 		syst->energy=old_potential;
@@ -353,6 +362,9 @@ void do_CNTUS(System *syst, Output *output_files)
 		syst->box[2]=old_box[2];
 
 		//cells_restore(syst);
+		cells_free(syst->cells);
+		cells_init(syst, output_files, syst->r_cut);
+		cells_fill(syst);
 
 	}
 
@@ -774,6 +786,7 @@ void MC_change_volume(System *syst, Output *IO) {
 	double ln_final_V = log(initial_V) + (drand48() - 0.5)*syst->rescale_factor_max;
 	double final_V = exp(ln_final_V);
 
+
 	double old_side = syst->box[dir];
 	double new_side = final_V;
 	int i = 0;
@@ -840,10 +853,14 @@ void MC_change_Lx(System *syst, Output *IO) {
 	set_vector(old_sides, syst->box[0], syst->box[1], syst->box[2]);
 	syst->box[0] += (drand48() - 0.5) * syst->Lx_change_max;
 	// we keep the volume constant
-	syst->box[1] = syst->box[2] = sqrt(syst->V / syst->box[0]);
+	//syst->box[1] = syst->box[2] = sqrt(syst->V / syst->box[0]);
+	double area = syst->V / syst->box[0];
+        syst->box[2]=sqrt(area/syst->yz_ratio);
+        syst->box[1]=syst->box[2]*syst->yz_ratio;
 
 	// early rejection if Ly (or, equivalently, Lz) is not within the allowed range
-	if(syst->box[1] < syst->Lyz_min || syst->box[1] > syst->Lyz_max) {
+	if(syst->box[1] < syst->Lyz_min || syst->box[1] > syst->Lyz_max || syst->box[2] < syst->Lyz_min || syst->box[2] > syst->Lyz_max) {
+	//if(syst->box[1] < syst->Lyz_min || syst->box[1] > syst->Lyz_max) {
 		set_vector(syst->box, old_sides[0], old_sides[1], old_sides[2]);
 		return;
 	}
@@ -867,7 +884,7 @@ void MC_change_Lx(System *syst, Output *IO) {
 
 
 	// if we compress the system too much we'll have to recompute the cells
-	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
+	if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut || (syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) {
 		cells_free(syst->cells);
 		cells_init(syst, IO, syst->r_cut);
 		cells_fill(syst);
@@ -896,7 +913,7 @@ void MC_change_Lx(System *syst, Output *IO) {
 		set_vector(syst->box, old_sides[0], old_sides[1], old_sides[2]);
 
 		// we might have to recompute the cells once again
-		if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut) {
+		if((syst->box[0] / syst->cells->N_side[0]) < syst->r_cut || (syst->box[1] / syst->cells->N_side[1]) < syst->r_cut || (syst->box[2] / syst->cells->N_side[2]) < syst->r_cut) {
 			cells_free(syst->cells);
 			cells_init(syst, IO, syst->r_cut);
 			cells_fill(syst);
@@ -907,7 +924,13 @@ void MC_change_Lx(System *syst, Output *IO) {
 }
 
 void MC_add_remove_biased(System *syst, Output *IO) {
+	
+	// select the species
+	int specie_selected=(int)(drand48()*syst->num_species);
+
+	
 	// try to add a particle
+	
 
 	if(drand48() < 0.5) {
 		if(syst->N == syst->N_max) {
@@ -917,10 +940,13 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 
 			return;
 		}
+
 		syst->tries[ADD]++;
+
 
 		PatchyParticle *p = syst->particles + syst->N;
 		p->index = syst->N;
+		p->specie=specie_selected;
 
 		p->r[0] = drand48() * syst->box[0];
 		p->r[1] = drand48() * syst->box[1];
@@ -936,6 +962,8 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 		double delta_E = MC_energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 
+		//printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf\n", syst->bsus_collect[0], syst->bsus_collect[1], syst->bsus_collect[2], syst->bsus_collect[3], syst->bsus_collect[4], syst->bsus_collect[5], syst->bsus_collect[6], syst->bsus_collect[7], syst->bsus_collect[8]);
+
 		double pa;
 		if (syst->overlap==1)
 			pa=0;
@@ -946,7 +974,7 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 		syst->bsus_collect[3*(syst->N-syst->N_min)+1]+=(1.-pa);
 
 		double bias=syst->bsus_pm[syst->N-syst->N_min+1]-syst->bsus_pm[syst->N-syst->N_min];
-
+		
 
 		if(!syst->overlap && drand48() < exp(-bias)*acc) {
 			syst->energy += delta_E;
@@ -958,8 +986,15 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 			syst->cells->heads[cell_index] = p;
 			p->cell = p->cell_old = cell_index;
 
+			//printf("specie to add %d \n", specie_selected);
+
+			//printf("*** %d %d\n",syst->species_count[0],syst->species_count[1]);
+
 			syst->N++;
 			syst->accepted[ADD]++;
+			syst->species_count[specie_selected]++;
+
+			//printf("** %d %d\n",syst->species_count[0],syst->species_count[1]);
 		}
 		else {
 			syst->overlap = 0;
@@ -972,9 +1007,22 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 			syst->bsus_collect[1]+=1.;
 			return;
 		}
+
+		if(syst->species_count[specie_selected] == 0) {
+                        printf( "The system contains 0 particles of that species \n");
+
+                        syst->bsus_collect[1]+=1.;
+
+                        return;
+                }
+
 		syst->tries[REMOVE]++;
 
-		PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
+		PatchyParticle *p;
+		do
+		{
+			p = syst->particles + (int) (drand48() * syst->N);
+		} while (p->specie!=specie_selected);
 
 		double delta_E = -MC_energy(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
@@ -1023,6 +1071,8 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 				p->r[1] = q->r[1];
 				p->r[2] = q->r[2];
 
+				p->specie = q->specie;
+
 				int i;
 				for(i = 0; i < 3; i++) {
 					memcpy(p->orientation[i], q->orientation[i], sizeof(double) * 3);
@@ -1036,6 +1086,15 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 				syst->cells->next[p->index] = syst->cells->heads[p->cell];
 				syst->cells->heads[p->cell] = p;
 			}
+
+			//printf("specie to remove %d \n", specie_selected);
+
+			//printf("*** %d %d\n",syst->species_count[0],syst->species_count[1]);
+
+			syst->species_count[specie_selected]--;
+
+			//printf("** %d %d\n",syst->species_count[0],syst->species_count[1]);
+			
 
 			syst->accepted[REMOVE]++;
 		}
@@ -1060,6 +1119,10 @@ void bsus_update_histo(System *syst)
 		syst->bsus_normvec[i]+=syst->bsus_collect[3*i+2];
 	}
 
+	//printf("**** %lf %lf %lf \n", syst->bsus_normvec[0], syst->bsus_normvec[1], syst->bsus_normvec[2]);
+
+	//printf ("@@@ %lf %lf %lf \n", syst->bsus_collect[0], syst->bsus_collect[1], syst->bsus_collect[2]);
+	
 	for (i=0;i<histogram_size;i++)
 	{
 		if (syst->bsus_normvec[i]>0)
@@ -1098,6 +1161,8 @@ void MC_check_energy(System *syst, Output *IO) {
 	E *= 0.5;
 
 	if(syst->overlap) output_exit(IO, "\nComputing energy from scratch resulted in an overlap, aborting\n");
+	
+	//printf("***** %lf %lf %lf\n", E, fabs(syst->energy), fabs((E - syst->energy) / syst->energy));
 	if(fabs(syst->energy) > 1e-5 && fabs((E - syst->energy) / syst->energy) > 1e-5) {
 		output_exit(IO, "\nEnergy check failed, old energy = %lf, new energy = %lf\n", syst->energy, E);
 	}

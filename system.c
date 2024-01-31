@@ -236,7 +236,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	}
 
 	syst->Lx_move = 0;
-	if(syst->ensemble == NPT) {
+	if ((syst->ensemble == NPT) || (syst->ensemble==CNTUS)) {
 		getInputDouble(input, "rescale_factor_max", &syst->rescale_factor_max, 1);
 		getInputDouble(input, "P", &syst->P, 1);
 
@@ -254,10 +254,11 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	else {
 		getInputInt(input, "Lx_move", &syst->Lx_move, 0);
 		if(syst->Lx_move) {
-			if(syst->box[1] != syst->box[2]) {
-				output_exit(output_files, "Lx_move = 1 requires Ly = Lz\n");
-			}
-
+			//if(syst->box[1] != syst->box[2]) {
+			//	output_exit(output_files, "Lx_move = 1 requires Ly = Lz\n");
+			//}
+			syst->yz_ratio=syst->box[1]/syst->box[2];
+			
 			getInputDouble(input, "Lx_change_max", &syst->Lx_change_max, 1);
 			getInputDouble(input, "Lyz_min", &syst->Lyz_min, 1);
 			getInputDouble(input, "Lyz_max", &syst->Lyz_max, 1);
@@ -687,7 +688,7 @@ void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p,int *
 	getLine(line,pfile);
 	int nn,ns;
 	sscanf(line,"%d %d\n",&nn,&ns);
-	assert(n==nn);
+	//assert(n==nn);
 	assert(ns==species);
 
 	memset(species_count,0,ns*sizeof(int));
@@ -705,7 +706,7 @@ void system_readSpecies(char *nomefile,int n,int species,PatchyParticle *p,int *
 	}
 
 
-	assert(i==n);
+	//assert(i==n);
 
 	fclose(pfile);
 
