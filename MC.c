@@ -437,6 +437,25 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 		output_exit(IO, "Dynamics %d not supported\n", syst->dynamics);
 		break;
 	}
+
+	switch(syst->three_body) {
+		case THREE_BODY:
+			output_log_msg(IO, "\nTHREE BODY POTENTIAL\n");
+			syst->do_energy_old=&MC_energy_old;
+			syst->do_energy_new=&MC_energy_new;
+			syst->do_energy_par=&MC_energy_particle;
+			syst->do_energy_sys=&MC_energy_system;
+			break;
+		default:
+			output_log_msg(IO, "\nTWO BODY POTENTIAL\n");
+			syst->do_energy_old=&MC_energy;
+			syst->do_energy_new=&MC_energy;
+			syst->do_energy_par=&MC_energy;
+			syst->do_energy_sys=&MC_energy;
+			break;
+	}
+
+
 }
 
 void MC_free(System *syst) {
@@ -463,6 +482,8 @@ void MC_rollback_particle(System *syst, PatchyParticle *p) {
 	}
 	for(i = 0; i < p->n_patches; i++) {
 		MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+		if (syst->three_body==THREE_BODY)
+			p->patch_numneighbours[i]=p->patch_numneighbours_old[i];
 	}
 
 	Cells *cells = syst->cells;
@@ -484,6 +505,22 @@ void MC_rollback_particle(System *syst, PatchyParticle *p) {
 		p->cell = p->cell_old;
 		p->cell_old = c_old;
 	}
+
+	if (syst->three_body==THREE_BODY)
+	{
+		// rollback three body term
+		while (bilistaPop(syst->interacting_patches_modified,&i))
+		{
+			int particle=i/p->n_patches;
+			int patch=i%p->n_patches;
+	
+			syst->particles[particle].patch_numneighbours[patch]=syst->particles[particle].patch_numneighbours_old[patch];
+		}
+
+		// in case of overlap
+		while (bilistaPop(syst->interacting_patches,&i));
+	}
+
 }
 
 void MC_change_cell(System *syst, PatchyParticle *p) {
@@ -533,6 +570,9 @@ void MC_rototraslate_particle(System *syst, PatchyParticle *p, vector disp, vect
 
 	for(i = 0; i < p->n_patches; i++) {
 		MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+
+		//if (syst->three_body==THREE_BODY)
+		//	p->patch_numneighbours_old[i]=p->patch_numneighbours[i];
 	}
 
 	MC_change_cell(syst, p);
@@ -590,6 +630,7 @@ inline int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *
 	return MC_would_interact(syst, p, q->r, q->patches,q->specie, onp, onq);
 }
 
+
 double MC_energy(System *syst, PatchyParticle *p) {
 	syst->overlap = 0;
 	double E = 0.;
@@ -629,6 +670,274 @@ double MC_energy(System *syst, PatchyParticle *p) {
 	return E;
 }
 
+
+double MC_energy_system(System *syst, PatchyParticle *p) {
+	syst->overlap = 0;
+	double E = 0.;
+	memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+	memset(p->patch_numneighbours,0,p->n_patches*sizeof(int));
+
+	int ind[3], loop_ind[3];
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
+
+	int j, k, l, p_patch, q_patch;
+
+	for(j = -1; j < 2; j++) {
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
+		for(k = -1; k < 2; k++) {
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
+			for(l = -1; l < 2; l++) {
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
+
+				PatchyParticle *q = syst->cells->heads[loop_index];
+				while(q != NULL) {
+					if(q->index != p->index) {
+						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
+
+						if(val == PATCH_BOND) {
+							E -= 1;
+							//if (p->index<q->index)
+							p->patch_numneighbours[p_patch]++;
+						}
+						else if(val == OVERLAP) {
+							syst->overlap = 1;
+							return 0.;
+						}
+					}
+					q = syst->cells->next[q->index];
+				}
+			}
+		}
+	}
+
+	for (j=0;j<p->n_patches;j++)
+	{
+		// not divided by 2 because energy is going to be halfed outside this function
+		E+=(p->patch_numneighbours[j]*(p->patch_numneighbours[j]-1));
+	}
+
+	return E;
+}
+
+double MC_energy_particle(System *syst, PatchyParticle *p) {
+	syst->overlap = 0;
+	double E = 0.;
+	memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+	memset(p->patch_numneighbours,0,p->n_patches*sizeof(int));
+
+	int ind[3], loop_ind[3];
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
+
+	int j, k, l, p_patch, q_patch;
+
+	for(j = -1; j < 2; j++) {
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
+		for(k = -1; k < 2; k++) {
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
+			for(l = -1; l < 2; l++) {
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
+
+				PatchyParticle *q = syst->cells->heads[loop_index];
+				while(q != NULL) {
+					if(q->index != p->index) {
+						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
+
+						if(val == PATCH_BOND) {
+							E -= 1.;
+							
+							p->patch_numneighbours[p_patch]++;
+						}
+						else if(val == OVERLAP) {
+							syst->overlap = 1;
+							return 0.;
+						}
+					}
+					q = syst->cells->next[q->index];
+				}
+			}
+		}
+	}
+
+	for (j=0;j<p->n_patches;j++)
+	{
+		E+=(p->patch_numneighbours[j]*(p->patch_numneighbours[j]-1))/2;
+	}
+
+	return E;
+}
+
+double MC_energy_old(System *syst, PatchyParticle *p) {
+	syst->overlap = 0;
+	double E = 0.;
+
+	//memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+	memset(p->patch_numneighbours,0,p->n_patches*sizeof(int));
+
+	int ind[3], loop_ind[3];
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
+
+	int j, k, l, p_patch, q_patch;
+
+	for(j = -1; j < 2; j++) {
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
+		for(k = -1; k < 2; k++) {
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
+			for(l = -1; l < 2; l++) {
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
+
+				PatchyParticle *q = syst->cells->heads[loop_index];
+				while(q != NULL) {
+					if(q->index != p->index) {
+						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
+
+						if(val == PATCH_BOND) {
+							
+							
+
+							E-=1.;
+							p->patch_numneighbours[p_patch]++;
+							
+							/*
+							if (q->patch_numneighbours[q_patch]==0)
+							{
+								printf("problemone %d %d\n",q->index,q_patch);
+							}
+							*/
+
+							// attention: it is assumed here that all particles have the same number of patches
+							bilistaInsert(syst->interacting_patches,(q->n_patches*q->index)+q_patch);
+
+						}
+						else if(val == OVERLAP) {
+							// non dovrebbe mai entrare qui
+							exit(1);
+							syst->overlap = 1;
+							return 0.;
+						}
+					}
+					q = syst->cells->next[q->index];
+				}
+			}
+		}
+	}
+
+	// termine a tre corpi della particella p
+	for (j=0;j<p->n_patches;j++)
+	{
+			E+=(p->patch_numneighbours[j]*(p->patch_numneighbours[j]-1))/2;
+	}
+
+	return E;
+}
+
+
+double MC_energy_new(System *syst, PatchyParticle *p) {
+	syst->overlap = 0;
+	double E = 0.;
+
+	
+	int pp;
+	while(bilistaPop(syst->interacting_patches_modified,&pp));
+	memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+	memset(p->patch_numneighbours,0,p->n_patches*sizeof(int));
+
+	int ind[3], loop_ind[3];
+	cells_fill_and_get_idx_from_particle(syst, p, ind);
+
+	int j, k, l, p_patch, q_patch;
+
+	for(j = -1; j < 2; j++) {
+		loop_ind[0] = (ind[0] + j + syst->cells->N_side[0]) % syst->cells->N_side[0];
+		for(k = -1; k < 2; k++) {
+			loop_ind[1] = (ind[1] + k + syst->cells->N_side[1]) % syst->cells->N_side[1];
+			for(l = -1; l < 2; l++) {
+				loop_ind[2] = (ind[2] + l + syst->cells->N_side[2]) % syst->cells->N_side[2];
+				int loop_index = (loop_ind[0] * syst->cells->N_side[1] + loop_ind[1]) * syst->cells->N_side[2] + loop_ind[2];
+
+				PatchyParticle *q = syst->cells->heads[loop_index];
+				while(q != NULL) {
+					if(q->index != p->index) {
+						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
+
+						if(val == PATCH_BOND) {
+
+							if (bilistaIsIn(syst->interacting_patches,(q->n_patches*q->index)+q_patch)==0)
+							{
+								// {now:interact) , {before:no interact}
+								E+=q->patch_numneighbours[q_patch]-1.;
+
+								// in case of rejection
+
+								// controllo non serve
+								//if (bilistaIsIn(syst->interacting_patches_modified,(q->n_patches*q->index)+q_patch)==0)
+								//{
+									q->patch_numneighbours_old[q_patch]=q->patch_numneighbours[q_patch];
+									bilistaInsert(syst->interacting_patches_modified,(q->n_patches*q->index)+q_patch);
+								//}
+								
+								q->patch_numneighbours[q_patch]++;
+								p->patch_numneighbours[p_patch]++;
+
+								
+
+								
+							}
+							else
+							{
+								// {now:interact) , {before:interact}
+								E-=1.;
+
+								p->patch_numneighbours[p_patch]++;
+
+								bilistaRemove(syst->interacting_patches,(q->n_patches*q->index)+q_patch);
+							}
+
+						}
+						else if(val == OVERLAP) {
+
+							
+
+							syst->overlap = 1;
+							return 0.;
+						}
+					}
+					q = syst->cells->next[q->index];
+				}
+			}
+		}
+	}
+
+	while (bilistaPop(syst->interacting_patches,&pp))
+	{
+		// {now:no interact) , {before:interact}
+		int particle=pp/p->n_patches;
+		int patch=pp%p->n_patches;
+
+		E+=1-syst->particles[particle].patch_numneighbours[patch];
+
+
+		// in case of rejection
+		syst->particles[particle].patch_numneighbours_old[patch]=syst->particles[particle].patch_numneighbours[patch];
+		bilistaInsert(syst->interacting_patches_modified,(syst->particles[particle].n_patches*particle)+patch);
+		syst->particles[particle].patch_numneighbours[patch]-=1;
+
+		
+	}
+
+	// termine a tre corpi della particella p
+	for (j=0;j<p->n_patches;j++)
+	{
+		E+=(p->patch_numneighbours[j]*(p->patch_numneighbours[j]-1))/2;	
+	
+	}
+
+
+	return E;
+}
+
 void MC_move_rototranslate(System *syst, Output *IO) {
 	PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
 	int type = ROTO_TRASL;
@@ -646,9 +955,10 @@ void MC_move_rototranslate(System *syst, Output *IO) {
 	utils_rotate_matrix(p->orientation, new_orient, axis, theta);
 
 	// apply changes to p
-	double deltaE = -MC_energy(syst, p);
+	double deltaE = -syst->do_energy_old(syst, p);
 	MC_rototraslate_particle(syst, p, disp, new_orient);
-	deltaE += MC_energy(syst, p);
+	deltaE += syst->do_energy_new(syst, p);
+
 
 	if(!syst->overlap && (deltaE < 0. || drand48() < exp(-deltaE / syst->T))) {
 		syst->energy += deltaE;
@@ -683,7 +993,7 @@ void MC_add_remove(System *syst, Output *IO) {
 			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 		}
 
-		double delta_E = MC_energy(syst, p);
+		double delta_E = syst->do_energy_par(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 
 		if(!syst->overlap && drand48() < acc) {
@@ -710,7 +1020,7 @@ void MC_add_remove(System *syst, Output *IO) {
 
 		PatchyParticle *p = syst->particles + (int) (drand48() * syst->N);
 
-		double delta_E = -MC_energy(syst, p);
+		double delta_E = -syst->do_energy_par(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
 		if(drand48() < acc) {
 			syst->energy += delta_E;
@@ -755,6 +1065,8 @@ void MC_add_remove(System *syst, Output *IO) {
 				}
 				for(i = 0; i < p->n_patches; i++) {
 					MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+					if (syst->three_body==THREE_BODY)
+						p->patch_numneighbours[i]=q->patch_numneighbours[i];
 				}
 
 				// and finally add it back to its former cell
@@ -820,10 +1132,19 @@ void MC_change_volume(System *syst, Output *IO) {
 	int overlap_found = 0;
 	for(i = 0; i < syst->N && !overlap_found; i++) {
 		PatchyParticle *p = syst->particles + i;
-		delta_E += MC_energy(syst, p) * 0.5;
+
+		if (syst->three_body==THREE_BODY)
+		{
+			memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+		}
+
+		delta_E += syst->do_energy_sys(syst, p) * 0.5;
+
 		if(syst->overlap) {
 			overlap_found = 1;
 		}
+
+		
 	}
 
 	double delta_V = final_V - initial_V;
@@ -837,6 +1158,12 @@ void MC_change_volume(System *syst, Output *IO) {
 		for(i = 0; i < syst->N; i++) {
 			PatchyParticle *p = syst->particles + i;
 			p->r[dir] /= rescale_factor;
+
+			if (syst->three_body==THREE_BODY)
+			{
+				memcpy(p->patch_numneighbours,p->patch_numneighbours_old,p->n_patches*sizeof(int));
+			}
+
 		}
 
 		syst->box[dir] = old_side;
@@ -894,7 +1221,13 @@ void MC_change_Lx(System *syst, Output *IO) {
 	int overlap_found = 0;
 	for(i = 0; i < syst->N && !overlap_found; i++) {
 		PatchyParticle *p = syst->particles + i;
-		delta_E += MC_energy(syst, p) * 0.5;
+
+		if (syst->three_body==THREE_BODY)
+		{
+			memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+		}
+
+		delta_E += syst->do_energy_sys(syst, p) * 0.5;
 		if(syst->overlap) overlap_found = 1;
 	}
 
@@ -908,6 +1241,12 @@ void MC_change_Lx(System *syst, Output *IO) {
 			p->r[0] /= rescale_factors[0];
 			p->r[1] /= rescale_factors[1];
 			p->r[2] /= rescale_factors[2];
+
+			if (syst->three_body==THREE_BODY)
+			{
+				memcpy(p->patch_numneighbours,p->patch_numneighbours_old,p->n_patches*sizeof(int));
+			}
+
 		}
 
 		set_vector(syst->box, old_sides[0], old_sides[1], old_sides[2]);
@@ -918,6 +1257,8 @@ void MC_change_Lx(System *syst, Output *IO) {
 			cells_init(syst, IO, syst->r_cut);
 			cells_fill(syst);
 		}
+
+		
 
 		syst->overlap = 0;
 	}
@@ -959,7 +1300,7 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 			MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
 		}
 
-		double delta_E = MC_energy(syst, p);
+		double delta_E = syst->do_energy_par(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->z * syst->V / (syst->N + 1.);
 
 		//printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf\n", syst->bsus_collect[0], syst->bsus_collect[1], syst->bsus_collect[2], syst->bsus_collect[3], syst->bsus_collect[4], syst->bsus_collect[5], syst->bsus_collect[6], syst->bsus_collect[7], syst->bsus_collect[8]);
@@ -1024,7 +1365,7 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 			p = syst->particles + (int) (drand48() * syst->N);
 		} while (p->specie!=specie_selected);
 
-		double delta_E = -MC_energy(syst, p);
+		double delta_E = -syst->do_energy_par(syst, p);
 		double acc = exp(-delta_E / syst->T) * syst->N / (syst->V * syst->z);
 
 		double pa=(acc>1 ? 1 : acc);
@@ -1079,6 +1420,11 @@ void MC_add_remove_biased(System *syst, Output *IO) {
 				}
 				for(i = 0; i < p->n_patches; i++) {
 					MATRIX_VECTOR_MULTIPLICATION(p->orientation, p->base_patches[i], p->patches[i]);
+
+					if (syst->three_body==THREE_BODY)
+					{
+						memcpy(p->patch_numneighbours,q->patch_numneighbours,p->n_patches*sizeof(int));
+					}
 				}
 
 				// and finally add it back to its former cell
@@ -1155,8 +1501,8 @@ void MC_check_energy(System *syst, Output *IO) {
 	syst->overlap = 0;
 	for(i = 0; i < syst->N; i++) {
 		PatchyParticle *p = syst->particles + i;
-		E += MC_energy(syst, p);
 		gram_schmidt(p->orientation[0], p->orientation[1], p->orientation[2]);
+		E += syst->do_energy_sys(syst, p);
 	}
 	E *= 0.5;
 
@@ -1225,7 +1571,13 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 	int overlap_found = 0;
 	for(i = 0; i < syst->N && !overlap_found; i++) {
 		PatchyParticle *p = syst->particles + i;
-		delta_E_a += MC_energy(syst, p) * 0.5;
+
+		if (syst->three_body==THREE_BODY)
+		{
+			memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+		}
+
+		delta_E_a += syst->do_energy_sys(syst, p) * 0.5;
 		if(syst->overlap) {
 			overlap_found = 1;
 		}
@@ -1273,7 +1625,13 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 		overlap_found = 0;
 		for(i = 0; i < syst->N && !overlap_found; i++) {
 			PatchyParticle *p = syst->particles + i;
-			delta_E_b += MC_energy(syst, p) * 0.5;
+
+			if (syst->three_body==THREE_BODY)
+			{
+				memcpy(p->patch_numneighbours_old,p->patch_numneighbours,p->n_patches*sizeof(int));
+			}
+
+			delta_E_b += syst->do_energy_sys(syst, p) * 0.5;
 			if(syst->overlap) {
 				overlap_found = 1;
 			}
@@ -1302,6 +1660,11 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 				p->r[1] /= rescale_factor;
 				p->r[2] /= rescale_factor;
 
+				if (syst->three_body==THREE_BODY)
+				{
+					memcpy(p->patch_numneighbours,p->patch_numneighbours_old,p->n_patches*sizeof(int));
+				}
+
 			}
 
 			systa->box[0]=oldbox_a[0];
@@ -1314,6 +1677,11 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 				p->r[0] /= rescale_factor_b;
 				p->r[1] /= rescale_factor_b;
 				p->r[2] /= rescale_factor_b;
+
+				if (syst->three_body==THREE_BODY)
+				{
+					memcpy(p->patch_numneighbours,p->patch_numneighbours_old,p->n_patches*sizeof(int));
+				}
 
 			}
 
@@ -1333,6 +1701,11 @@ void MC_gibbs_VolumeMove(System *systa,System *systb, Output *IO) {
 			p->r[0] /= rescale_factor;
 			p->r[1] /= rescale_factor;
 			p->r[2] /= rescale_factor;
+
+			if (syst->three_body==THREE_BODY)
+			{
+				memcpy(p->patch_numneighbours,p->patch_numneighbours_old,p->n_patches*sizeof(int));
+			}
 
 		}
 
@@ -1377,7 +1750,7 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 			MATRIX_VECTOR_MULTIPLICATION(pa->orientation, pa->base_patches[i], pa->patches[i]);
 		}
 
-		double energy_1 = MC_energy(systa, pa);
+		double energy_1 = systa->do_energy_par(systa, pa);
 		double volume_1=(systa->box[0]*systa->box[1]*systa->box[2]);
 		//int particle_1=1+systa->N;
 		int particle_1=1+systa->species_count[s];
@@ -1398,7 +1771,7 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 
 			PatchyParticle *pr = systb->particles + (j-1);
 
-			double energy_2 = -MC_energy(systb, pr);
+			double energy_2 = -systb->do_energy_par(systb, pr);
 			double volume_2=(systb->box[0]*systb->box[1]*systb->box[2]);
 			//int particle_2=systb->N;
 			int particle_2=systb->species_count[s];
@@ -1468,6 +1841,11 @@ void MC_gibbs_transfer(System *systa,System *systb, Output *IO) {
 					}
 					for(k = 0; k < pr->n_patches; k++) {
 						MATRIX_VECTOR_MULTIPLICATION(pr->orientation, pr->base_patches[k], pr->patches[k]);
+
+						if (systa->three_body==THREE_BODY)
+						{
+							memcpy(pr->patch_numneighbours,q->patch_numneighbours,pr->n_patches*sizeof(int));
+						}
 					}
 
 					// and finally add it back to its former cell

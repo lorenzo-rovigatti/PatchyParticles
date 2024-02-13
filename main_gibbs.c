@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	syst1.energy = 0;
 	for(i = 0; i < syst1.N; i++)	{
-		syst1.energy += MC_energy(&syst1, syst1.particles + i);
+		syst1.energy += syst1.do_energy_sys(&syst1, syst1.particles + i);
 		if(syst1.overlap == 1) output_exit(&output_files1, "Initial configuration contains an overlap, aborting\n");
 	}
 	syst1.energy *= 0.5;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 
 	syst2.energy = 0;
 	for(i = 0; i < syst2.N; i++)	{
-		syst2.energy += MC_energy(&syst2, syst2.particles + i);
+		syst2.energy += syst2.do_energy_sys(&syst2, syst2.particles + i);
 		if(syst2.overlap == 1) output_exit(&output_files2, "Initial configuration contains an overlap, aborting\n");
 	}
 	syst2.energy *= 0.5;

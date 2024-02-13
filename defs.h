@@ -36,12 +36,18 @@
 #define NO_BOND 0
 #define PATCH_BOND 1
 
+#define PATCH_MAXNEIGHBOURS 4
+
+#define THREE_BODY 1
+#define TWO_BODY 0
+
 #include "cells.h"
 
 #include <stdio.h>
 #include <complex.h>
 #include <assert.h>
 #include <signal.h>
+#include "jr_bilista.h"
 
 typedef double vector[3];
 typedef double matrix[3][3];
@@ -58,6 +64,11 @@ typedef struct PatchyParticle {
 
 	int cell, cell_old;
 	int specie;
+
+	// three body variables
+	int *patch_numneighbours;
+	int *patch_numneighbours_old;
+
 } PatchyParticle;
 
 typedef struct System {
@@ -83,6 +94,12 @@ typedef struct System {
 	int piston_direction;
 	void (*do_dynamics)(struct System *, Output *);
 	void (*do_ensemble)(struct System *, Output *);
+
+	// selection of hamoltonian - with or without three-body term
+	double (*do_energy_old)(struct System *,struct PatchyParticle *);
+	double (*do_energy_new)(struct System *,struct PatchyParticle *);
+	double (*do_energy_par)(struct System *,struct PatchyParticle *);
+	double (*do_energy_sys)(struct System *,struct PatchyParticle *);
 
 	// non-biased sus variables
 	llint *SUS_hist;
@@ -146,7 +163,13 @@ typedef struct System {
 	double US_k;
 	int US_steps;
 	double US_OP_0;
-		
+
+
+	
+	// three body variables
+	int three_body;
+	bilista *interacting_patches;
+	bilista *interacting_patches_modified;
 
 } System;
 

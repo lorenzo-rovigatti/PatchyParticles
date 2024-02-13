@@ -19,6 +19,10 @@ int MC_would_interact(System *syst, PatchyParticle *p, vector r, matrix orient, 
 int MC_interact(System *syst, PatchyParticle *p, PatchyParticle *q, int *onp, int *onq);
 
 double MC_energy(System *syst, PatchyParticle *p);
+double MC_energy_new(System *syst, PatchyParticle *p);
+double MC_energy_old(System *syst, PatchyParticle *p);
+double MC_energy_particle(System *syst, PatchyParticle *p);
+double MC_energy_system(System *syst, PatchyParticle *p);
 
 void MC_add_remove(System *syst, Output *output_files);
 void MC_move_rototranslate(System *syst, Output *output_files);

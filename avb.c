@@ -111,9 +111,9 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
 
-			double deltaE = -MC_energy(syst, p);
+			double deltaE = -syst->do_energy_old(syst, p);
 			MC_rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += MC_energy(syst, p);
+			deltaE += syst->do_energy_new(syst, p);
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
@@ -178,9 +178,9 @@ void AVBMC_dynamics(System *syst, Output *IO) {
 
 			vector disp = { new_particle.r[0] - p->r[0], new_particle.r[1] - p->r[1], new_particle.r[2] - p->r[2] };
 
-			double deltaE = -MC_energy(syst, p);
+			double deltaE = -syst->do_energy_old(syst, p);
 			MC_rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += MC_energy(syst, p);
+			deltaE += syst->do_energy_new(syst, p);
 
 			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * avbdata->avb_vout / ((syst->N - avbdata->num_neighbours) * avbdata->avb_vin);
 			if(!syst->overlap && drand48() < acc) {
@@ -282,9 +282,9 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 
 			vector disp = { new_r[0] - p->r[0], new_r[1] - p->r[1], new_r[2] - p->r[2] };
 
-			double deltaE = -MC_energy(syst, p);
+			double deltaE = -syst->do_energy_old(syst, p);
 			MC_rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += MC_energy(syst, p);
+			deltaE += syst->do_energy_new(syst, p);
 
 #ifdef DEBUG
 			int p_patch = 0, q_patch = 0;
@@ -354,9 +354,9 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 
 			vector disp = { new_particle.r[0] - p->r[0], new_particle.r[1] - p->r[1], new_particle.r[2] - p->r[2] };
 
-			double deltaE = -MC_energy(syst, p);
+			double deltaE = -syst->do_energy_old(syst, p);
 			MC_rototraslate_particle(syst, p, disp, new_orient);
-			deltaE += MC_energy(syst, p);
+			deltaE += syst->do_energy_new(syst, p);
 
 			double acc = exp(-deltaE / syst->T) * avbdata->num_neighbours * (syst->V-bonding_volume*avbdata->avb_vin_per_unit) / ((syst->N - avbdata->num_neighbours) * bonding_volume*avbdata->avb_vin_per_unit);
 			if(!syst->overlap && drand48() < acc) {

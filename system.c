@@ -71,7 +71,12 @@ void _init_tetrahedral_patches(System *syst, Output *output_files) {
 	// into the 0, 0, 1 one
 	for(i = 0; i < 3; i++) {
 		for(j = 0; j < 3; j++) syst->base_orient[i][j] = my_orient[j][i];
+
 	}
+
+
+
+	
 }
 
 
@@ -117,6 +122,13 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 
 	getInputInt(input, "Dynamics", &syst->dynamics, 1);
 	getInputInt(input, "Ensemble", &syst->ensemble, 1);
+
+	// THREE_BODY ////////////
+	if (getInputInt(input, "Three_body", &syst->three_body,0)==KEY_NOT_FOUND)
+	{
+		syst->three_body=TWO_BODY;
+	}
+	//////////////////////////
 
 	getInputDouble(input, "Disp_max", &syst->disp_max, 1);
 	getInputDouble(input, "Theta_max", &syst->theta_max, 1);
@@ -314,7 +326,7 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		_init_distorted_tetrahedral_patches(syst, output_files,distortion_angle_acceptor,distortion_angle_donor);
 	}
 
-	
+	int tot_patches=0;
 	for(i = 0; i < syst->N_max; i++) {
 		PatchyParticle *p = syst->particles + i;
 		p->index = i;
@@ -322,6 +334,20 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		p->n_patches = syst->n_patches;
 		p->patches = malloc(sizeof(vector) * p->n_patches);
 		p->base_patches = syst->base_patches;
+
+		if (syst->three_body==THREE_BODY)
+		{
+			p->patch_numneighbours=malloc(p->n_patches*sizeof(int));
+			p->patch_numneighbours_old=malloc(p->n_patches*sizeof(int));
+		}
+		tot_patches+=p->n_patches;
+	}
+
+	/* per il potenziale a tre corpi */
+	if (syst->three_body==THREE_BODY)
+	{
+		syst->interacting_patches=bilistaGet(tot_patches);
+		syst->interacting_patches_modified=bilistaGet(tot_patches);
 	}
 
 	i = 0;
@@ -521,7 +547,19 @@ void system_free(System *syst) {
 		PatchyParticle *p = syst->particles + i;
 		if(p->patches != NULL) {
 			free(p->patches);
+
+			if (syst->three_body==THREE_BODY)
+			{
+				free(p->patch_numneighbours);
+				free(p->patch_numneighbours_old);
+			}
 		}
+	}
+
+	if (syst->three_body==THREE_BODY)
+	{
+		bilistaFree(syst->interacting_patches);
+		bilistaFree(syst->interacting_patches_modified);
 	}
 
 	free(syst->particles);
