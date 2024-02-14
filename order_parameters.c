@@ -129,12 +129,13 @@ static double intpow (const double x, const int i) {
 	else return x * intpow(x, i - 1);
 }
 
+/*
 static double cintpow (const complex double x, const int i) {
 	if (i < 0) abort();
 	if (i == 0) return 1.;
 	if (i == 1) return x;
 	else return x * cintpow(x, i - 1);
-}
+}*/
 
 
 static double binomial (const double n, const int k) {

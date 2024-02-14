@@ -4,6 +4,7 @@
 #include "parse_input.h"
 #include "system.h"
 #include "utils.h"
+#include "defs.h"
 
 #include <math.h>
 #include <float.h>
@@ -20,7 +21,8 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 
 	int numpatches = syst->n_patches;
 
-	avbdata->neighbours = malloc(numpatches * sizeof(PatchyParticle*));
+	avbdata->neighbours = malloc(numpatches *PATCH_MAXNEIGHBOURS* sizeof(PatchyParticle*));
+	avbdata->num_neighbours_patch=calloc(numpatches,sizeof(int));
 	avbdata->num_neighbours = 0;
 
 	avbdata->avb_vin = syst->n_patches * syst->n_patches * (M_PI * (syst->kf_delta * syst->kf_delta * syst->kf_delta + 3. * SQR(syst->kf_delta) + 3. * syst->kf_delta) * SQR(1. - syst->kf_cosmax) / 3.);
@@ -39,6 +41,7 @@ void AVBMC_init(input_file *input, System *syst, Output *IO) {
 
 void AVBMC_free() {
 	free(avbdata->neighbours);
+	free(avbdata->num_neighbours_patch);
 	free(avbdata);
 }
 
@@ -47,7 +50,8 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 	cells_fill_and_get_idx_from_particle(syst, p, ind);
 
 	avbdata->num_neighbours = 0;
-	memset(avbdata->neighbours, 0, p->n_patches * sizeof(PatchyParticle*));
+	memset(avbdata->neighbours, 0, p->n_patches * PATCH_MAXNEIGHBOURS*sizeof(PatchyParticle*));
+	memset(avbdata->num_neighbours_patch,0,p->n_patches*sizeof(int));
 
 	int j, k, l, p_patch, q_patch;
 
@@ -65,7 +69,8 @@ void _set_neighbours(System *syst, PatchyParticle *p) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
 						if(val == PATCH_BOND) {
-							avbdata->neighbours[p_patch] = q;
+							avbdata->neighbours[PATCH_MAXNEIGHBOURS*p_patch+avbdata->num_neighbours_patch[p_patch]] = q;
+							avbdata->num_neighbours_patch[p_patch]++;
 							avbdata->num_neighbours++;
 						}
 					}
@@ -221,7 +226,14 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 				p = syst->particles + (int) (drand48() * syst->N);
 				found = 1;
 				for(i = 0; i < receiver->n_patches && found; i++)
-					if(avbdata->neighbours[i] == p) found = 0;
+				{
+					int j;
+					for (j=0;j<avbdata->num_neighbours_patch[i] && found ; j++)
+					{
+						if(avbdata->neighbours[PATCH_MAXNEIGHBOURS*i+j] == p) found = 0;
+					}
+					
+				}
 			} while(!found || p == receiver);
 
 			// select which bonding volume to occupy
@@ -270,7 +282,8 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			} while (i<sel_bv);
 
 			// early rejection
-			if (avbdata->neighbours[p_r] != NULL)
+			//if (avbdata->neighbours[p_r] != NULL)
+			if (avbdata->num_neighbours_patch[p_r] != 0)
 			{
 				return;
 			}
@@ -314,6 +327,12 @@ void AVBMC_dynamics_colors(System *syst, Output *IO) {
 			while(cn <= random_neighbour) {
 				if(avbdata->neighbours[ci] != NULL) cn++;
 				ci++;
+			}
+			
+			// early exit if the particle selected was in a multiple occupied patch
+			if (avbdata->num_neighbours_patch[(ci-1)/PATCH_MAXNEIGHBOURS]>1)
+			{
+				return;
 			}
 
 			p = avbdata->neighbours[ci - 1];

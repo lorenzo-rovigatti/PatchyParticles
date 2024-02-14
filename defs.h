@@ -36,6 +36,7 @@
 #define NO_BOND 0
 #define PATCH_BOND 1
 
+// for now only used in the AVB move
 #define PATCH_MAXNEIGHBOURS 4
 
 #define THREE_BODY 1

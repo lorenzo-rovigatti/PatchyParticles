@@ -8,6 +8,7 @@ typedef struct input_file input_file;
 
 typedef struct _avbmc {
 	PatchyParticle **neighbours;
+	int *num_neighbours_patch;
 	int num_neighbours;
 
 	double avb_vin, avb_vout;
