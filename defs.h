@@ -36,6 +36,9 @@
 #define NO_BOND 0
 #define PATCH_BOND 1
 
+#define TETRAHEDRAL_BLOCK 0
+#define TRIVALENT_BLOCK 1
+
 #include "cells.h"
 
 #include <stdio.h>
