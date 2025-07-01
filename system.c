@@ -111,13 +111,55 @@ void _init_distorted_tetrahedral_patches(System *syst, Output *output_files,doub
 	}
 }
 
-void _init_trivalent_patches(System *syst, Output *output_files, double inclination)
+void _init_trivalent_patches(System *syst, Output *output_files,double inclination)
 {
 	syst->n_patches = 3;
 	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
 	set_vector(syst->base_patches[0], 0.5 * cos(inclination) * cos(0.0000000000), 0.5 * cos(inclination) * sin(0.0000000000), 0.5 * sin(inclination));
 	set_vector(syst->base_patches[1], 0.5 * cos(inclination) * cos(2. * M_PI / 3.), 0.5 * cos(inclination) * sin(2. * M_PI / 3.), 0.5 * sin(inclination));
 	set_vector(syst->base_patches[2], 0.5 * cos(inclination) * cos(4. * M_PI / 3.), 0.5 * cos(inclination) * sin(4. * M_PI / 3.), 0.5 * sin(inclination));
+
+	int i, j;
+	for (i = 0; i < syst->n_patches; i++)
+		normalize(syst->base_patches[i]);
+
+	// now we need to initialize syst->base_orient
+	// first we initialize my_orient as the identity matrix
+	// and we get -syst->base_patches[0], because the
+	// set_orientation_around_vector invert its first argument
+	matrix my_orient;
+	vector my_first_patch;
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			memset(my_orient[i], 0, 3 * sizeof(double));
+			my_orient[i][i] = 1.;
+		}
+		my_first_patch[i] = -syst->base_patches[0][i];
+	}
+	// then we calculate the rotation matrix required to transform
+	// the 0, 0, 1 vector to the syst->base_patches[0] one
+	set_orientation_around_vector(my_first_patch, my_orient, 0);
+	// and then we transpose that matrix to obtain the rotation
+	// needed to transform the syst->base_patches[0] vector
+	// into the 0, 0, 1 one
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; j < 3; j++)
+			syst->base_orient[i][j] = my_orient[j][i];
+	}
+}
+
+void _init_fivepatchico_patches(System *syst, Output *output_files)
+{
+	syst->n_patches = 5;
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	set_vector(syst->base_patches[0], 0.5 * -0.698025, 0.5 * 0.186027, 0.5 * -0.691488);
+	set_vector(syst->base_patches[1], 0.5 * -0.502114, 0.5 * -0.756162, 0.5 * -0.419643);
+	set_vector(syst->base_patches[2], 0.5 * -0.122606, 0.5 * -0.857303, 0.5 * 0.500000);
+	set_vector(syst->base_patches[3], 0.5 * -0.067452, 0.5 * 0.008298, 0.5 * 0.997688);
+	set_vector(syst->base_patches[4], 0.5 * -0.530036, 0.5 * 0.847039, 0.5 * 0.039842);
 
 	int i, j;
 	for (i = 0; i < syst->n_patches; i++)
@@ -341,7 +383,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	int distortion;
 	int distortion_value=getInputInt(input, "Distorted_tetrahedra", &distortion, 0);
 
-	if ((buildingblock_value==KEY_FOUND) && (buildingblock==TRIVALENT_BLOCK))
+	if ((buildingblock_value==KEY_FOUND) && (buildingblock==PENTAVALENTICO_BLOCK))
+	{
+		output_log_msg(output_files, "Pentavalent system\n");
+		_init_fivepatchico_patches(syst,output_files);
+	}
+	else if ((buildingblock_value==KEY_FOUND) && (buildingblock==TRIVALENT_BLOCK))
 	{
 		double inclination;
 		getInputDouble(input, "Inclination", &inclination, 1);
