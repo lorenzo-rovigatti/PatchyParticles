@@ -193,6 +193,50 @@ void _init_fivepatchico_patches(System *syst, Output *output_files)
 	}
 }
 
+void _init_octahedral_patches(System *syst, Output *output_files)
+{
+	double nn=0.5/sqrt(2.);
+	syst->n_patches = 6;
+	syst->base_patches = malloc(sizeof(vector) * syst->n_patches);
+	set_vector(syst->base_patches[0], 0, 0, 0.5);
+	set_vector(syst->base_patches[1], -nn, -nn, 0);
+	set_vector(syst->base_patches[2], -nn,nn,0);
+	set_vector(syst->base_patches[3], nn,nn,0);
+	set_vector(syst->base_patches[4], nn,-nn,0);
+	set_vector(syst->base_patches[5], 0, 0, -0.5);
+
+	int i, j;
+	for (i = 0; i < syst->n_patches; i++)
+		normalize(syst->base_patches[i]);
+
+	// now we need to initialize syst->base_orient
+	// first we initialize my_orient as the identity matrix
+	// and we get -syst->base_patches[0], because the
+	// set_orientation_around_vector invert its first argument
+	matrix my_orient;
+	vector my_first_patch;
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			memset(my_orient[i], 0, 3 * sizeof(double));
+			my_orient[i][i] = 1.;
+		}
+		my_first_patch[i] = -syst->base_patches[0][i];
+	}
+	// then we calculate the rotation matrix required to transform
+	// the 0, 0, 1 vector to the syst->base_patches[0] one
+	set_orientation_around_vector(my_first_patch, my_orient, 0);
+	// and then we transpose that matrix to obtain the rotation
+	// needed to transform the syst->base_patches[0] vector
+	// into the 0, 0, 1 one
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; j < 3; j++)
+			syst->base_orient[i][j] = my_orient[j][i];
+	}
+}
+
 void system_init(input_file *input, System *syst, Output *output_files) {
 	int res, i;
 
@@ -383,7 +427,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 	int distortion;
 	int distortion_value=getInputInt(input, "Distorted_tetrahedra", &distortion, 0);
 
-	if ((buildingblock_value==KEY_FOUND) && (buildingblock==PENTAVALENTICO_BLOCK))
+	if ((buildingblock_value==KEY_FOUND) && (buildingblock==OCTAHEDRAL_BLOCKS))
+	{
+		output_log_msg(output_files, "Octahedral system\n");
+		_init_octahedral_patches(syst,output_files);
+	}
+	else if ((buildingblock_value==KEY_FOUND) && (buildingblock==PENTAVALENTICO_BLOCK))
 	{
 		output_log_msg(output_files, "Pentavalent system\n");
 		_init_fivepatchico_patches(syst,output_files);

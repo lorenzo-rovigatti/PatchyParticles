@@ -39,6 +39,7 @@
 #define TETRAHEDRAL_BLOCK 0
 #define TRIVALENT_BLOCK 1
 #define PENTAVALENTICO_BLOCK 2
+#define OCTAHEDRAL_BLOCKS 3
 
 #include "cells.h"
 
