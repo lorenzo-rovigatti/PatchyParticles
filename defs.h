@@ -40,6 +40,7 @@
 #define TRIVALENT_BLOCK 1
 #define PENTAVALENTICO_BLOCK 2
 #define OCTAHEDRAL_BLOCKS 3
+#define ICODNA_BLOCKS 4
 
 #include "cells.h"
 
