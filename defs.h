@@ -129,6 +129,7 @@ typedef struct System {
 	int num_species;
 	int num_colors;
 	int **colorint;
+	double **energyint;
 	int *ncolorint;
 	int **particlescolor; // particlescolor[specie,patch]=color
 	int **color; // color[color,specie]=how many patches of that color

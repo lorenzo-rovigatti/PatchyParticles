@@ -565,18 +565,28 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		syst->num_colors=num_colors;
 
 		Matrix2D(syst->colorint,num_colors,num_colors,int);
+		Matrix2D(syst->energyint, num_colors, num_colors, double);
+		int ii, jj;
+		for (ii=0;ii<num_colors;ii++)
+		{
+			for (jj=0;jj<num_colors;jj++)
+			{
+				syst->energyint[ii][jj]=0.;
+			}
+		}
+
 		syst->ncolorint=calloc(num_colors,sizeof(int));
 		Matrix2D(syst->particlescolor,num_species,num_patches,int);
 		Matrix2D(syst->color,num_colors,num_species,int);
 
 		syst->species_count=calloc(num_species,sizeof(int));
 
-		system_readColors(colors_name,syst->colorint,syst->ncolorint,syst->particlescolor,syst->color);
+		system_readColors(colors_name,syst->colorint,syst->ncolorint,syst->particlescolor,syst->color,syst->energyint);
 		system_readSpecies(species_name,syst->N,syst->num_species,syst->particles,syst->species_count);
 
 		Matrix2D(syst->bonding_volume_units,num_species,num_species,int);
 
-		int ii,jj;
+		
 		for (ii=0;ii<num_species;ii++)
 		{
 			for (jj=0;jj<num_species;jj++)
@@ -805,7 +815,7 @@ void system_readColorsMax(char *namefile,int *max_species,int *max_colors)
 }
 
 
-void system_readColors(char *namefile,int **colorint,int *ncolorint,int **particle,int **color)
+void system_readColors(char *namefile,int **colorint,int *ncolorint,int **particle,int **color,double **energyint)
 {
 
 	char line[MAX_LINE_LENGTH]="";
@@ -839,6 +849,30 @@ void system_readColors(char *namefile,int **colorint,int *ncolorint,int **partic
 				ncolorint[c2]++;
 			}
 
+			energyint[c1][c2]=1.;
+			energyint[c2][c1] = 1.;
+		}
+		else if (line[0]=='E')
+		{
+			// example E(0,1,3) means that color 0 and color 1 interact with energy -1/3
+			char *pch;
+			pch = strtok(line, ",");
+
+			int c1 = atoi(pch + 2);
+
+			pch = strtok(NULL, ",");
+
+			int c2 = atoi(pch);
+
+			pch = strtok(NULL, ",");
+
+			strncpy(buffer, pch, (strlen(pch) - 2) * sizeof(char));
+			buffer[strlen(pch) - 2] = '\0';
+
+			int e = atoi(buffer);
+
+			energyint[c1][c2] = 1./(double)e;
+			energyint[c2][c1] = 1. / (double)e;
 		}
 		else if (line[0]=='C')
 		{

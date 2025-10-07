@@ -613,7 +613,8 @@ double MC_energy(System *syst, PatchyParticle *p) {
 						int val = MC_interact(syst, p, q, &p_patch, &q_patch);
 
 						if(val == PATCH_BOND) {
-							E -= 1.;
+							//E -= 1.;
+							E-=syst->energyint[syst->particlescolor[p->specie][p_patch]][syst->particlescolor[q->specie][q_patch]];
 						}
 						else if(val == OVERLAP) {
 							syst->overlap = 1;
