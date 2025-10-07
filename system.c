@@ -854,7 +854,7 @@ void system_readColors(char *namefile,int **colorint,int *ncolorint,int **partic
 		}
 		else if (line[0]=='E')
 		{
-			// example E(0,1,3) means that color 0 and color 1 interact with energy -1/3
+			// example E(0,1,3,4) means that color 0 and color 1 interact with energy -3/4
 			char *pch;
 			pch = strtok(line, ",");
 
@@ -865,14 +865,20 @@ void system_readColors(char *namefile,int **colorint,int *ncolorint,int **partic
 			int c2 = atoi(pch);
 
 			pch = strtok(NULL, ",");
+			
+			int n=atoi(pch);
+
+			pch = strtok(NULL, ",");
 
 			strncpy(buffer, pch, (strlen(pch) - 2) * sizeof(char));
 			buffer[strlen(pch) - 2] = '\0';
 
-			int e = atoi(buffer);
+			int d = atoi(buffer);
 
-			energyint[c1][c2] = 1./(double)e;
-			energyint[c2][c1] = 1. / (double)e;
+			double e=(double)n/(double)d;
+
+			energyint[c1][c2] = e;
+			energyint[c2][c1] = e;
 		}
 		else if (line[0]=='C')
 		{
