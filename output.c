@@ -89,6 +89,16 @@ void output_init(input_file *input, Output *output_files) {
 	}
 	else output_files->density = NULL;
 
+	// angled move
+	if (ensemble==ANGLED)
+	{
+		sprintf(name, "costeta.dat");
+		getInputString(input, "Angled_costeta_file", name, 0);
+		output_files->costeta = fopen(name, mode);
+		if (output_files->costeta == NULL)
+			output_exit(output_files, "Costeta file '%s' is not writable\n", name);
+	}
+
 	output_files->print_bonds = 0;
 	getInputInt(input, "Print_bonds", &output_files->print_bonds, 0);
 	if(output_files->print_bonds) {
@@ -133,6 +143,7 @@ void output_free(Output *output_files) {
 	if(output_files->log != stderr) fclose(output_files->log);
 	if(output_files->density != NULL) fclose(output_files->density);
 	if(output_files->boxshape != NULL) fclose(output_files->boxshape);
+	if(output_files->costeta!=NULL) fclose(output_files->costeta);
 }
 
 void output_print(Output *output_files, System *syst, llint step) {
@@ -163,6 +174,11 @@ void output_print(Output *output_files, System *syst, llint step) {
                         fprintf(output_files->density, " %d",syst->species_count[kk]);
                 fprintf(output_files->density, "\n");
 		fflush(output_files->density);
+	}
+
+	if (syst->ensemble==ANGLED)
+	{
+		fprintf(output_files->costeta, "%lld %lf\n", step, syst->kf_cosmax);
 	}
 
 
@@ -214,6 +230,9 @@ void output_print(Output *output_files, System *syst, llint step) {
 	case CNTUS:
 		fprintf(output_files->acc, " %e", syst->accepted[VOLUME]/ (double) syst->tries[VOLUME]);
 		fprintf(output_files->acc, " %e", syst->accepted[USCNTMOVE]/ (double) syst->tries[USCNTMOVE]);
+		break;
+	case ANGLED:
+		fprintf(output_files->acc, " %e", syst->accepted[ANGLEDMOVE] / (double)syst->tries[ANGLEDMOVE]);
 		break;
 	default:
 		break;

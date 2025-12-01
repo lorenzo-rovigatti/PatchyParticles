@@ -102,6 +102,19 @@ void do_NPT(System *syst, Output *output_files) {
 	}
 }
 
+void do_angle(System *syst, Output *output_files)
+{
+	int i;
+	for (i = 0; i < syst->N; i++)
+	{
+		if (drand48() < 1. / syst->N)
+		{
+			MC_change_angle(syst, output_files);
+		}
+		else if (syst->N > 0)
+			syst->do_dynamics(syst, output_files);
+	}
+}
 
 void do_BSUS(System *syst, Output *output_files) {
 	int i;
@@ -412,6 +425,9 @@ void MC_init(input_file *input, System *syst, Output *IO) {
 	case CNTUS:
 		syst->do_ensemble=&do_CNTUS;
 		break;
+	case ANGLED:
+		syst->do_ensemble = &do_angle;
+		break;
 	default:
 		output_exit(IO, "Ensemble %d not supported\n", syst->ensemble);
 		break;
@@ -661,6 +677,7 @@ void MC_move_rototranslate(System *syst, Output *IO) {
 	}
 }
 
+
 void MC_add_remove(System *syst, Output *IO) {
 	// try to add a particle
 	if(drand48() < 0.5) {
@@ -769,7 +786,47 @@ void MC_add_remove(System *syst, Output *IO) {
 	}
 }
 
-void MC_change_volume(System *syst, Output *IO) {
+void MC_change_angle(System *syst, Output *IO)
+{
+	syst->tries[ANGLEDMOVE]++;
+
+	double old_angle = syst->kf_cosmax;
+
+	double delta_angle=(drand48() - 0.5+syst->angle_disp_bias) * syst->angle_disp_max;
+
+	syst->kf_cosmax+=delta_angle;
+
+	// compute the new energy
+	double delta_E = -syst->energy;
+
+	int overlap_found = 0;
+	int i;
+	for (i = 0; i < syst->N && !overlap_found; i++)
+	{
+		PatchyParticle *p = syst->particles + i;
+		delta_E += MC_energy(syst, p) * 0.5;
+		if (syst->overlap)
+		{
+			overlap_found = 1;
+		}
+	}
+
+	// IMPORTANT: we don't correct for the bias in the acceptance rate to have drift
+	if (!syst->overlap && (delta_E < 0. || drand48() < exp(-delta_E / syst->T)))
+	{
+		syst->energy += delta_E;
+		syst->accepted[ANGLEDMOVE]++;
+	}
+	else
+	{
+		syst->kf_cosmax=old_angle;
+		syst->overlap = 0;
+	}
+
+}
+
+void MC_change_volume(System *syst, Output *IO)
+{
 	syst->tries[VOLUME]++;
 
 	double delta_E = -syst->energy;

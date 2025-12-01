@@ -33,6 +33,7 @@ typedef struct Output {
 	FILE *acc;
 	FILE *boxshape;
 	FILE *op;
+	FILE *costeta;
 } Output;
 
 void output_init(input_file *input, Output *output_files);

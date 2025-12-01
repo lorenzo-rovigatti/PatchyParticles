@@ -8,7 +8,7 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
-#define N_MOVES 10
+#define N_MOVES 11
 #define ROTO_TRASL 0
 #define AVB 1
 #define ADD 2
@@ -19,6 +19,7 @@
 #define LX 7
 #define TRANSFER 8
 #define USCNTMOVE 9
+#define ANGLEDMOVE 10
 
 #define NVT 0
 #define GC 1
@@ -27,10 +28,12 @@
 #define BSUS 4
 #define GIBBS 6
 #define CNTUS 7
+#define ANGLED 8
 
 #define RTMC 0
 #define VMMC 1
 #define AVBMC 2
+
 
 #define OVERLAP -1
 #define NO_BOND 0
@@ -115,8 +118,12 @@ typedef struct System {
 	double Lyz_min;
 	double Lyz_max;
 
+	// angled move
+	double angle_disp_max;
+	double angle_disp_bias;
 
-	double kf_delta, kf_cosmax, kf_sqr_rcut;
+	double kf_delta,
+	kf_cosmax, kf_sqr_rcut;
 	double r_cut;
 
 	Cells *cells;

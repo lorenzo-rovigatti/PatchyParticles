@@ -447,6 +447,12 @@ void system_init(input_file *input, System *syst, Output *output_files) {
 		}
 	}
 
+	// ANGLE MOVE
+	if (syst->ensemble==ANGLED)
+	{
+		getInputDouble(input, "Angled_bias", &syst->angle_disp_bias, 1);
+		getInputDouble(input, "Angled_max", &syst->angle_disp_max, 1);
+	}
 
 	// GIBBS initialization /////
 	if(syst->ensemble == GIBBS) {

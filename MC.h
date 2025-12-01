@@ -24,8 +24,9 @@ void MC_add_remove(System *syst, Output *output_files);
 void MC_move_rototranslate(System *syst, Output *output_files);
 void MC_change_volume(System *syst, Output *output_files);
 void MC_change_Lx(System *syst, Output *output_files);
+void MC_change_angle(System *syst, Output *IO);
 
-void MC_init(input_file *input, System *syst, Output *output_files);
+    void MC_init(input_file *input, System *syst, Output *output_files);
 void MC_add_remove_biased(System *syst, Output *IO);
 void MC_add_remove_single_cluster(System *syst, Output *IO);
 void MC_move_rototranslate(System *syst, Output *IO);
